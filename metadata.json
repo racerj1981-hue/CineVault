@@ -1,0 +1,6 @@
+{
+  "name": "CineVault",
+  "description": "Curated cinema collection and media archive with unblocked streaming.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
