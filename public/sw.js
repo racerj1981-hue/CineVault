@@ -1,21 +1,23 @@
 // CineVault Offline Service Worker
-const CACHE_NAME = 'cinevault-cache-v2';
+const CACHE_NAME = 'cinevault-cache-v3';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.svg',
-  '/icon.svg',
-  '/pwa-192x192.png',
-  '/pwa-512x512.png',
-  '/apple-touch-icon.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './favicon.svg',
+  './icon.svg',
+  './pwa-192x192.png',
+  './pwa-512x512.png',
+  './apple-touch-icon.png'
 ];
 
 // Install Event: precache shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
+      // Map relative asset paths to full URLs relative to sw.js location
+      const urlsToPrefetch = STATIC_ASSETS.map((asset) => new URL(asset, self.location).href);
+      return cache.addAll(urlsToPrefetch).catch((err) => {
         console.warn('[SW] Precache partial error:', err);
       });
     }).then(() => self.skipWaiting())
@@ -62,7 +64,12 @@ self.addEventListener('fetch', (event) => {
           // Offline! Return cached page or root /
           const cached = await caches.match(req);
           if (cached) return cached;
-          const fallback = await caches.match('/index.html') || await caches.match('/');
+          const fallback =
+            (await caches.match(new URL('./index.html', self.location).href)) ||
+            (await caches.match(new URL('./', self.location).href)) ||
+            (await caches.match(self.registration.scope)) ||
+            (await caches.match('/index.html')) ||
+            (await caches.match('/'));
           if (fallback) return fallback;
           return new Response(
             '<!DOCTYPE html><html><head><meta charset="utf-8"><title>CineVault Offline</title></head><body style="background:#09090b;color:#fff;font-family:sans-serif;padding:2rem;text-align:center"><h1>CineVault Offline</h1><p>The app shell will be available once cached.</p></body></html>',

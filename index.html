@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CineVault</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" id="favicon-link" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" id="favicon-link" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <meta name="theme-color" content="#09090b" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -18,23 +18,28 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <script>
-      // Register Service Worker for Offline Mode
+      // Register Service Worker for Offline Mode (relative path aware for GitHub Pages & custom subpaths)
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' })
-            .then((reg) => {
-              console.log('[CineVault PWA] Service worker registered successfully with scope:', reg.scope);
-            })
-            .catch((err) => {
-              console.warn('[CineVault PWA] Service worker registration failed:', err);
-            });
+          try {
+            const swUrl = new URL('sw.js', window.location.href).href;
+            navigator.serviceWorker.register(swUrl)
+              .then((reg) => {
+                console.log('[CineVault PWA] Service worker registered successfully with scope:', reg.scope);
+              })
+              .catch((err) => {
+                console.warn('[CineVault PWA] Service worker registration failed:', err);
+              });
+          } catch (e) {
+            console.warn('[CineVault PWA] SW init error:', e);
+          }
         });
       }
     </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="./src/main.jsx"></script>
   </body>
 </html>
 
