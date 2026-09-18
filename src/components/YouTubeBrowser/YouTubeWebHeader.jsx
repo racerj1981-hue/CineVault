@@ -12,7 +12,11 @@ import {
   Tv,
   ExternalLink,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Wifi,
+  WifiOff,
+  User,
+  HardDriveDownload
 } from 'lucide-react';
 import { extractYouTubeId, getChannelAvatar } from '../../data/youtubeData';
 import { YouTubeLogo } from '../YouTubeLogo';
@@ -37,7 +41,11 @@ export const YouTubeWebHeader = ({
   selectedNodeIndex = 0,
   onSelectNode,
   onOpenDiagnostics,
-  activeVideo = null
+  activeVideo = null,
+  isOfflineMode = false,
+  onToggleOfflineMode,
+  activeProfile = null,
+  onOpenProfileManager
 }) => {
   const [query, setQuery] = useState(currentSearchQuery || '');
   const [isFocused, setIsFocused] = useState(false);
@@ -202,8 +210,34 @@ export const YouTubeWebHeader = ({
         )}
       </div>
 
-      {/* 3. Right: Quick Actions & Video Profile */}
+      {/* 3. Right: Quick Actions, Offline Mode, & Viewer Profile */}
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Offline Mode Toggle Button */}
+        {onToggleOfflineMode && (
+          <button
+            type="button"
+            onClick={onToggleOfflineMode}
+            title={isOfflineMode ? 'Disable Offline Mode' : 'Enable Offline Mode'}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition cursor-pointer border ${
+              isOfflineMode
+                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 shadow-xs'
+                : 'bg-zinc-900 hover:bg-zinc-850 border-zinc-800 text-zinc-300'
+            }`}
+          >
+            {isOfflineMode ? (
+              <>
+                <WifiOff className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">Offline</span>
+              </>
+            ) : (
+              <>
+                <Wifi className="w-3.5 h-3.5 text-zinc-400" />
+                <span className="hidden sm:inline">Online</span>
+              </>
+            )}
+          </button>
+        )}
+
         <button
           type="button"
           onClick={onOpenDiagnostics}
@@ -214,17 +248,22 @@ export const YouTubeWebHeader = ({
           <span>Connected</span>
         </button>
 
-        {/* Profile of the Video / Creator */}
-        <div
-          title={activeVideo ? `${activeVideo.channel} • ${activeVideo.title}` : 'YouTube Profile'}
-          className="w-8 h-8 rounded-full overflow-hidden ring-1 ring-zinc-700/80 hover:ring-rose-500 shadow-sm cursor-pointer select-none bg-zinc-900 flex items-center justify-center shrink-0 transition"
-        >
-          <img
-            src={getChannelAvatar(activeVideo?.channel, activeVideo)}
-            alt={activeVideo?.channel || 'Video Profile'}
-            className="w-full h-full object-cover"
-          />
-        </div>
+        {/* Viewer Profile Selector Button */}
+        {onOpenProfileManager && (
+          <button
+            type="button"
+            onClick={onOpenProfileManager}
+            title={`Active Profile: ${activeProfile?.name || 'Personal'} - Click to switch`}
+            className="flex items-center gap-1.5 pl-1.5 pr-2 py-0.5 rounded-full bg-zinc-900 hover:bg-zinc-850 border border-zinc-700/80 hover:border-amber-400 transition cursor-pointer shadow-xs"
+          >
+            <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-xs">
+              {activeProfile?.avatarEmoji || '👤'}
+            </div>
+            <span className="text-xs font-bold text-zinc-200 hidden sm:inline max-w-[100px] truncate">
+              {activeProfile?.name?.split(' ')[0] || 'Profile'}
+            </span>
+          </button>
+        )}
       </div>
     </header>
   );

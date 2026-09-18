@@ -20,9 +20,24 @@ import {
   Repeat,
   Volume2,
   Tv,
-  Maximize2
+  Maximize2,
+  HardDriveDownload,
+  Tag,
+  WifiOff
 } from 'lucide-react';
 import { YOUTUBE_PROXY_NODES, getVideoThumbnail, getChannelAvatar } from '../../data/youtubeData';
+import {
+  recordWatchEvent,
+  recordInteractionEvent,
+  getUpNextRecommendations,
+  loadAlgoProfile
+} from '../../utils/youtubeAlgorithm';
+import {
+  isVideoSavedOffline,
+  toggleSaveVideoOffline,
+  loadOfflineModeState
+} from '../../utils/youtubeProfilesAndOffline';
+import { VideoProfileModal } from './VideoProfileModal';
 
 export const YouTubeWatchPage = ({
   video,
@@ -32,11 +47,15 @@ export const YouTubeWatchPage = ({
   selectedNodeIndex = 0,
   onSelectNode,
   onAddToQueue,
+  onOpenVideoProfileModal,
   stealthTitleActive
 }) => {
   const [reloadKey, setReloadKey] = useState(0);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isOfflineSaved, setIsOfflineSaved] = useState(false);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [showLocalProfileModal, setShowLocalProfileModal] = useState(false);
   const [likesCount, setLikesCount] = useState(14200);
   const [hasLiked, setHasLiked] = useState(false);
   const [hasDisliked, setHasDisliked] = useState(false);
@@ -45,6 +64,7 @@ export const YouTubeWatchPage = ({
   const [isLooping, setIsLooping] = useState(false);
   const [captionsEnabled, setCaptionsEnabled] = useState(false);
   const [autoFailoverToast, setAutoFailoverToast] = useState(false);
+  const [upNextFilter, setUpNextFilter] = useState('all'); // 'all' | 'channel' | 'related'
   const [comments, setComments] = useState([
     {
       id: 1,
@@ -83,6 +103,27 @@ export const YouTubeWatchPage = ({
         })
       : `https://www.youtube.com/embed/${video?.id || 'aqz-KE-bpKQ'}?autoplay=1&rel=0&playsinline=1`;
 
+  // Check offline state
+  useEffect(() => {
+    if (video?.id) {
+      setIsOfflineSaved(isVideoSavedOffline(video.id));
+    }
+    setIsOfflineMode(loadOfflineModeState());
+  }, [video?.id]);
+
+  const handleToggleOfflineSave = () => {
+    const nextState = toggleSaveVideoOffline(video);
+    setIsOfflineSaved(nextState);
+  };
+
+  // Record watch event in algorithmic profile
+  useEffect(() => {
+    if (video && video.id) {
+      const profile = loadAlgoProfile();
+      recordWatchEvent(video, profile);
+    }
+  }, [video?.id]);
+
   // Reset loading state on video change or node change
   useEffect(() => {
     setIsVideoLoading(true);
@@ -113,7 +154,8 @@ export const YouTubeWatchPage = ({
       setHasLiked(true);
       setLikesCount((prev) => prev + 1);
       if (hasDisliked) setHasDisliked(false);
-      onLikeVideo?.(video);
+      const profile = loadAlgoProfile();
+      recordInteractionEvent(video.id, video, 'like', profile);
     }
   };
 
@@ -154,14 +196,10 @@ export const YouTubeWatchPage = ({
     setAutoFailoverToast(false);
   };
 
-  const otherVideos = useMemo(
-    () => videos.filter((v) => v.id !== video?.id),
-    [videos, video?.id]
-  );
-
   const recommendedVideos = useMemo(() => {
-    return otherVideos.slice(0, 12);
-  }, [otherVideos]);
+    const profile = loadAlgoProfile();
+    return getUpNextRecommendations(video, videos, profile, upNextFilter);
+  }, [video?.id, videos, upNextFilter]);
 
   return (
     <div className="flex-1 overflow-y-auto no-scrollbar bg-zinc-950 p-4 sm:p-6">
@@ -212,10 +250,10 @@ export const YouTubeWatchPage = ({
                 playsInline
                 onCanPlay={() => setIsVideoLoading(false)}
                 className="w-full h-full object-contain"
-                src={video.directStreamUrl || 'https://vjs.zencdn.net/v/oceans.mp4'}
+                src={video.directStreamUrl || `/api/youtube/stream?id=${video.id}`}
                 poster={getVideoThumbnail(video.id, video.thumbnail)}
               >
-                <source src={video.directStreamUrl || 'https://vjs.zencdn.net/v/oceans.mp4'} type="video/mp4" />
+                <source src={video.directStreamUrl || `/api/youtube/stream?id=${video.id}`} type="video/mp4" />
                 {video.backupStreamUrl && <source src={video.backupStreamUrl} type="video/mp4" />}
                 Your browser does not support HTML5 video streaming.
               </video>
@@ -230,7 +268,7 @@ export const YouTubeWatchPage = ({
                 }`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                 allowFullScreen
-                referrerPolicy="strict-origin-when-cross-origin"
+                referrerPolicy="no-referrer"
               />
             )}
 
@@ -280,6 +318,23 @@ export const YouTubeWatchPage = ({
               <span className="text-amber-400 font-bold">{currentNode.name}</span>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
+              {currentNode.id === 'nocookie' && (
+                <button
+                  onClick={() => {
+                    const nativeIdx = YOUTUBE_PROXY_NODES.findIndex((n) => n.id === 'native');
+                    if (nativeIdx !== -1) {
+                      onSelectNode(nativeIdx);
+                    } else {
+                      cycleNextMirror();
+                    }
+                    setReloadKey((prev) => prev + 1);
+                  }}
+                  title="If YouTube says 'Access restricted' or 'Playback disabled on other websites', click to instantly switch to Unrestricted Stream"
+                  className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-amber-500 hover:bg-amber-400 text-zinc-950 transition cursor-pointer flex items-center gap-1 shadow-xs"
+                >
+                  <span>⚡ Fix Access Restricted</span>
+                </button>
+              )}
               {YOUTUBE_PROXY_NODES.map((node, idx) => (
                 <button
                   key={node.id}
@@ -322,7 +377,8 @@ export const YouTubeWatchPage = ({
                     alt={video.channel || 'Channel Profile'}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(video.channel || 'YT')}&background=27272a&color=f59e0b&size=160&bold=true`;
                     }}
                   />
                 </div>
@@ -345,7 +401,7 @@ export const YouTubeWatchPage = ({
                 </button>
               </div>
 
-              {/* Action Buttons: Like/Dislike, Share, Bookmark, Queue */}
+              {/* Action Buttons: Like/Dislike, Share, Offline Save, Profile & Tags, Queue */}
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Like / Dislike Group */}
                 <div className="flex items-center rounded-full bg-zinc-900 border border-zinc-800 overflow-hidden">
@@ -376,6 +432,36 @@ export const YouTubeWatchPage = ({
                 >
                   {shareNotice ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
                   <span>{shareNotice ? 'Copied Link' : 'Share'}</span>
+                </button>
+
+                {/* Save for Offline Button */}
+                <button
+                  onClick={handleToggleOfflineSave}
+                  title={isOfflineSaved ? 'Video is cached for offline watching' : 'Cache video for offline viewing'}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition cursor-pointer ${
+                    isOfflineSaved
+                      ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
+                      : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-200'
+                  }`}
+                >
+                  <HardDriveDownload className="w-3.5 h-3.5" />
+                  <span>{isOfflineSaved ? 'Saved Offline ✓' : 'Save Offline'}</span>
+                </button>
+
+                {/* Video Profile & Tags Button */}
+                <button
+                  onClick={() => {
+                    if (onOpenVideoProfileModal) {
+                      onOpenVideoProfileModal(video);
+                    } else {
+                      setShowLocalProfileModal(true);
+                    }
+                  }}
+                  title="Manage Video Profile and custom tags"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-amber-400 hover:text-amber-300 transition cursor-pointer"
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  <span>Profile & Tags</span>
                 </button>
 
                 {/* Add to Queue Button */}
@@ -474,13 +560,50 @@ export const YouTubeWatchPage = ({
         <div className="w-full lg:w-80 xl:w-96 shrink-0 space-y-3">
           <div className="flex items-center justify-between font-bold text-xs text-zinc-300 uppercase tracking-wider mb-2">
             <div className="flex items-center gap-1.5 text-zinc-300">
-              <span>Up Next</span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Up Next • Algorithmic</span>
             </div>
+            <span className="text-[10px] text-zinc-500 font-mono lowercase">tuned</span>
+          </div>
+
+          {/* Up Next Filter Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            <button
+              onClick={() => setUpNextFilter('all')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                upNextFilter === 'all'
+                  ? 'bg-amber-500 text-zinc-950 font-bold'
+                  : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setUpNextFilter('channel')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer max-w-[140px] truncate ${
+                upNextFilter === 'channel'
+                  ? 'bg-amber-500 text-zinc-950 font-bold'
+                  : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
+              }`}
+            >
+              From {video.channel || 'Creator'}
+            </button>
+            <button
+              onClick={() => setUpNextFilter('related')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                upNextFilter === 'related'
+                  ? 'bg-amber-500 text-zinc-950 font-bold'
+                  : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
+              }`}
+            >
+              Related
+            </button>
           </div>
 
           <div className="space-y-3">
             {recommendedVideos.map((rec) => {
               const thumb = getVideoThumbnail(rec.id, rec.thumbnail);
+              const avatar = getChannelAvatar(rec.channel, rec);
 
               return (
                 <div
@@ -510,14 +633,25 @@ export const YouTubeWatchPage = ({
                       <h4 className="text-xs font-bold text-white line-clamp-2 leading-snug group-hover:text-amber-400 transition-colors">
                         {rec.title}
                       </h4>
-                      <div className="text-[11px] text-zinc-400 mt-0.5">
+                      <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 mt-1">
+                        <div className="w-4 h-4 rounded-full overflow-hidden bg-zinc-800 shrink-0 ring-1 ring-zinc-700/50">
+                          <img
+                            src={avatar}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(rec.channel || 'YT')}&background=27272a&color=f59e0b&size=80&bold=true`;
+                            }}
+                          />
+                        </div>
                         <p className="truncate hover:text-zinc-200">{rec.channel}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-[10px] text-zinc-500 pt-1 border-t border-zinc-850/60 mt-1">
                       <span>{rec.views}</span>
                       <span>•</span>
-                      <span>{rec.uploadedTime}</span>
+                      <span>{rec.uploadedTime || 'Recommended'}</span>
                     </div>
                   </div>
                 </div>
@@ -526,6 +660,18 @@ export const YouTubeWatchPage = ({
           </div>
         </div>
       </div>
+
+      {/* Video Profile & Metadata Modal */}
+      {showLocalProfileModal && (
+        <VideoProfileModal
+          isOpen={showLocalProfileModal}
+          onClose={() => setShowLocalProfileModal(false)}
+          video={video}
+          onUpdate={() => {
+            setIsOfflineSaved(isVideoSavedOffline(video?.id));
+          }}
+        />
+      )}
     </div>
   );
 };

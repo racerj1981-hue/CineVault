@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Film,
   Search,
@@ -12,6 +12,11 @@ import {
 import { MovieIcon } from './MovieIcon';
 import { YouTubePlayIcon } from './YouTubeLogo';
 import { triggerPanicButton } from '../utils/cloaker';
+import searchIconAsset from '../assets/search-icon.png';
+
+// Inline base64 search icon data URI to guarantee 100% availability in GitHub Pages, offline, and firewalls
+const EMBEDDED_SEARCH_ICON =
+  'data:image/png;base64,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';
 
 export const Header = ({
   currentTab = 'movies',
@@ -100,12 +105,12 @@ export const Header = ({
             <div className="relative flex-1 max-w-[200px] sm:max-w-xs md:max-w-md min-w-0">
               <div className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none z-10">
                 <img
-                  src="https://i.ibb.co/Y4VrQC5n/Screenshot-2026-09-10-181041-1.png"
+                  src={searchIconAsset || EMBEDDED_SEARCH_ICON}
                   alt="Search"
                   className="w-4 h-4 sm:w-4.5 sm:h-4.5 object-contain select-none"
                   onError={(e) => {
                     e.currentTarget.onerror = null;
-                    e.currentTarget.src = '/search-icon.png';
+                    e.currentTarget.src = EMBEDDED_SEARCH_ICON;
                   }}
                   referrerPolicy="no-referrer"
                 />

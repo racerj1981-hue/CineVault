@@ -4,8 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CineVault</title>
+    <script>
+      // Automatically normalize GitHub Pages path without trailing slash (e.g. /CineVault -> /CineVault/)
+      (function() {
+        var p = window.location.pathname;
+        if (!p.endsWith('/') && !p.split('/').pop().includes('.')) {
+          window.history.replaceState(null, '', p + '/' + window.location.search + window.location.hash);
+        }
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" id="favicon-link" />
-    <link rel="manifest" href="./manifest.json" />
+    <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <meta name="theme-color" content="#09090b" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -22,8 +31,10 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           try {
-            const swUrl = new URL('sw.js', window.location.href).href;
-            navigator.serviceWorker.register(swUrl)
+            var path = window.location.pathname;
+            var baseDir = path.endsWith('/') ? path : path.substring(0, path.lastIndexOf('/') + 1);
+            var swUrl = baseDir + 'sw.js';
+            navigator.serviceWorker.register(swUrl, { scope: baseDir })
               .then((reg) => {
                 console.log('[CineVault PWA] Service worker registered successfully with scope:', reg.scope);
               })

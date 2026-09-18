@@ -24,9 +24,26 @@ import {
   testYouTubeNodes,
   openAboutBlankCloak,
   fetchYouTubeSearch,
-  getVideoThumbnail
+  getVideoThumbnail,
+  fetchYouTubeFeed
 } from '../data/youtubeData';
+import {
+  recordSearchEvent,
+  recordWatchEvent,
+  recordInteractionEvent,
+  loadAlgoProfile
+} from '../utils/youtubeAlgorithm';
 import { applyTabCloak, resetTabCloak } from '../utils/cloaker';
+import {
+  loadUserProfiles,
+  getActiveProfileId,
+  setActiveProfileId,
+  loadOfflineModeState,
+  setOfflineModeState,
+  loadOfflineVideos,
+  loadAllVideoProfiles,
+  isVideoSavedOffline
+} from '../utils/youtubeProfilesAndOffline';
 import { BrowserChrome } from './YouTubeBrowser/BrowserChrome';
 import { YouTubeWebHeader } from './YouTubeBrowser/YouTubeWebHeader';
 import { YouTubeSidebar } from './YouTubeBrowser/YouTubeSidebar';
@@ -34,6 +51,9 @@ import { YouTubeHomeFeed } from './YouTubeBrowser/YouTubeHomeFeed';
 import { YouTubeWatchPage } from './YouTubeBrowser/YouTubeWatchPage';
 import { YouTubeSearchPage } from './YouTubeBrowser/YouTubeSearchPage';
 import { YouTubeRawMirror } from './YouTubeBrowser/YouTubeRawMirror';
+import { YouTubeProfilesView } from './YouTubeBrowser/YouTubeProfilesView';
+import { UserProfileManagerModal } from './YouTubeBrowser/UserProfileManagerModal';
+import { VideoProfileModal } from './YouTubeBrowser/VideoProfileModal';
 import { YouTubePlayIcon } from './YouTubeLogo';
 
 export const YouTubeView = ({
@@ -79,15 +99,14 @@ export const YouTubeView = ({
     }
   });
 
-  // Bookmarks / Saved Favorites
-  const [favorites, setFavorites] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cinevault_yt_favorites');
-      return saved ? JSON.parse(saved) : ['aqz-KE-bpKQ'];
-    } catch {
-      return ['aqz-KE-bpKQ'];
-    }
-  });
+  // Offline Mode & Video/User Profiles State
+  const [isOfflineMode, setIsOfflineMode] = useState(() => loadOfflineModeState());
+  const [userProfiles, setUserProfiles] = useState(() => loadUserProfiles());
+  const [activeProfileId, setActiveProfileIdState] = useState(() => getActiveProfileId());
+  const [showProfileManagerModal, setShowProfileManagerModal] = useState(false);
+  const [videoProfileModalTarget, setVideoProfileModalTarget] = useState(null);
+  const [offlineVideosCount, setOfflineVideosCount] = useState(() => loadOfflineVideos().length);
+  const [profilesCount, setProfilesCount] = useState(() => Object.keys(loadAllVideoProfiles()).length);
 
   // Global Bypass Node Index
   const [selectedNodeIndex, setSelectedNodeIndex] = useState(0);
@@ -134,11 +153,39 @@ export const YouTubeView = ({
     try {
       localStorage.setItem('cinevault_yt_queue', JSON.stringify(queue));
       localStorage.setItem('cinevault_yt_history', JSON.stringify(history));
-      localStorage.setItem('cinevault_yt_favorites', JSON.stringify(favorites));
     } catch {
       // ignore
     }
-  }, [queue, history, favorites]);
+  }, [queue, history]);
+
+  // Sync with offline and profile changes across components
+  useEffect(() => {
+    const handleOfflineModeChange = (e) => {
+      setIsOfflineMode(e.detail?.isOfflineMode ?? loadOfflineModeState());
+    };
+    const handleProfilesChange = (e) => {
+      setUserProfiles(e.detail?.profiles ?? loadUserProfiles());
+      setActiveProfileIdState(e.detail?.activeProfileId ?? getActiveProfileId());
+    };
+    const handleOfflineVideosUpdated = (e) => {
+      setOfflineVideosCount(e.detail?.videos?.length ?? loadOfflineVideos().length);
+    };
+    const handleVideoProfileUpdated = () => {
+      setProfilesCount(Object.keys(loadAllVideoProfiles()).length);
+    };
+
+    window.addEventListener('cinevault_offline_mode_changed', handleOfflineModeChange);
+    window.addEventListener('cinevault_profile_changed', handleProfilesChange);
+    window.addEventListener('cinevault_offline_videos_updated', handleOfflineVideosUpdated);
+    window.addEventListener('cinevault_video_profile_updated', handleVideoProfileUpdated);
+
+    return () => {
+      window.removeEventListener('cinevault_offline_mode_changed', handleOfflineModeChange);
+      window.removeEventListener('cinevault_profile_changed', handleProfilesChange);
+      window.removeEventListener('cinevault_offline_videos_updated', handleOfflineVideosUpdated);
+      window.removeEventListener('cinevault_video_profile_updated', handleVideoProfileUpdated);
+    };
+  }, []);
 
   // Stealth Title Effect
   useEffect(() => {
@@ -151,6 +198,29 @@ export const YouTubeView = ({
       }
     };
   }, [stealthTitleActive, savedCloakPreset]);
+
+  // Preload authentic YouTube feed into videos state
+  useEffect(() => {
+    let mounted = true;
+    const preload = async () => {
+      try {
+        const live = await fetchYouTubeFeed('All');
+        if (mounted && live && live.length > 0) {
+          setVideos((prev) => {
+            const map = new Map(prev.map((v) => [v.id, v]));
+            live.forEach((v) => map.set(v.id, v));
+            return Array.from(map.values());
+          });
+        }
+      } catch (err) {
+        console.warn('Initial live YouTube feed preload failed:', err);
+      }
+    };
+    preload();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -248,6 +318,11 @@ export const YouTubeView = ({
 
     // 4. Perform Search
     updateTab(activeTab.id, { isLoading: true });
+    // Record search in algorithm profile
+    try {
+      const profile = loadAlgoProfile();
+      recordSearchEvent(query, profile);
+    } catch {}
     try {
       const results = await fetchYouTubeSearch(query);
       navigateTabTo(activeTab.id, {
@@ -438,6 +513,11 @@ export const YouTubeView = ({
 
   // Add video to watch history
   const addToHistory = (video) => {
+    try {
+      const profile = loadAlgoProfile();
+      recordWatchEvent(video, profile);
+    } catch {}
+
     setHistory((prev) => {
       const filtered = prev.filter((item) => item.id !== video.id);
       return [
@@ -450,17 +530,20 @@ export const YouTubeView = ({
     });
   };
 
-  // Toggle favorite / bookmark
-  const handleToggleFavorite = (videoId, e) => {
-    e?.stopPropagation();
-    setFavorites((prev) =>
-      prev.includes(videoId) ? prev.filter((id) => id !== videoId) : [...prev, videoId]
-    );
+  // Toggle Offline Mode
+  const handleToggleOfflineMode = () => {
+    const nextState = !isOfflineMode;
+    setIsOfflineMode(nextState);
+    setOfflineModeState(nextState);
   };
 
   // Add to Up Next queue
   const handleAddToQueue = (video, e) => {
     e?.stopPropagation();
+    try {
+      const profile = loadAlgoProfile();
+      recordInteractionEvent(video.id, video, 'queue', profile);
+    } catch {}
     setQueue((prev) => {
       if (prev.some((item) => item.id === video.id)) return prev;
       return [...prev, video];
@@ -495,6 +578,22 @@ export const YouTubeView = ({
         activeVideo: null,
         searchQuery: '',
         selectedCategory: '⭐ Guaranteed Working'
+      });
+    } else if (sectionId === 'offline') {
+      updateTab(activeTab.id, {
+        url: 'https://www.youtube.com/offline',
+        title: 'Offline Vault - YouTube',
+        activeVideo: null,
+        searchQuery: '',
+        selectedSection: 'offline'
+      });
+    } else if (sectionId === 'profiles') {
+      updateTab(activeTab.id, {
+        url: 'https://www.youtube.com/profiles',
+        title: 'Video Profiles - YouTube',
+        activeVideo: null,
+        searchQuery: '',
+        selectedSection: 'profiles'
       });
     }
   };
@@ -571,6 +670,10 @@ export const YouTubeView = ({
           onSelectNode={setSelectedNodeIndex}
           onOpenDiagnostics={handleRunDiagnostics}
           activeVideo={activeTab.activeVideo}
+          isOfflineMode={isOfflineMode}
+          onToggleOfflineMode={handleToggleOfflineMode}
+          activeProfile={userProfiles.find((p) => p.id === activeProfileId) || userProfiles[0]}
+          onOpenProfileManager={() => setShowProfileManagerModal(true)}
         />
 
         {/* Browser Content & Sidebar Area */}
@@ -583,6 +686,10 @@ export const YouTubeView = ({
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             historyCount={history.length}
             queueCount={queue.length}
+            offlineCount={offlineVideosCount}
+            profilesCount={profilesCount}
+            isOfflineMode={isOfflineMode}
+            onToggleOfflineMode={handleToggleOfflineMode}
             onOpenDiagnostics={handleRunDiagnostics}
             onOpenShortcuts={() => setShowShortcutsModal(true)}
           />
@@ -603,6 +710,7 @@ export const YouTubeView = ({
               onSelectNode={setSelectedNodeIndex}
               onAddToQueue={handleAddToQueue}
               stealthTitleActive={stealthTitleActive}
+              onOpenVideoProfileModal={(v) => setVideoProfileModalTarget(v)}
             />
           ) : activeTab.searchQuery ? (
             /* C. YouTube Search Results Page */
@@ -613,9 +721,32 @@ export const YouTubeView = ({
               onSelectVideo={(v) => handleSelectVideo(v, false)}
               onOpenVideoInNewTab={(v) => handleSelectVideo(v, true)}
               onAddToQueue={handleAddToQueue}
+              onOpenVideoProfileModal={(v) => setVideoProfileModalTarget(v)}
+            />
+          ) : activeTab.selectedSection === 'offline' ? (
+            /* D. Offline Video Vault View */
+            <YouTubeProfilesView
+              allVideos={videos}
+              onSelectVideo={(v) => handleSelectVideo(v, false)}
+              onOpenVideoInNewTab={(v) => handleSelectVideo(v, true)}
+              onAddToQueue={handleAddToQueue}
+              onOpenProfileManager={() => setShowProfileManagerModal(true)}
+              onOpenVideoProfileModal={(v) => setVideoProfileModalTarget(v)}
+              initialFilter="offline"
+            />
+          ) : activeTab.selectedSection === 'profiles' ? (
+            /* E. Video Profiles & Tagged Library View */
+            <YouTubeProfilesView
+              allVideos={videos}
+              onSelectVideo={(v) => handleSelectVideo(v, false)}
+              onOpenVideoInNewTab={(v) => handleSelectVideo(v, true)}
+              onAddToQueue={handleAddToQueue}
+              onOpenProfileManager={() => setShowProfileManagerModal(true)}
+              onOpenVideoProfileModal={(v) => setVideoProfileModalTarget(v)}
+              initialFilter="all"
             />
           ) : activeTab.selectedSection === 'history' ? (
-            /* E. Watch History View */
+            /* F. Watch History View */
             <div className="flex-1 p-6 overflow-y-auto no-scrollbar bg-zinc-950">
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-zinc-800">
                 <div className="flex items-center gap-2">
@@ -738,6 +869,9 @@ export const YouTubeView = ({
               onOpenVideoInNewTab={(v) => handleSelectVideo(v, true)}
               onAddToQueue={handleAddToQueue}
               onSearchQuery={(q) => handleNavigateUrl(q)}
+              onOpenVideoProfileModal={(v) => setVideoProfileModalTarget(v)}
+              isOfflineMode={isOfflineMode}
+              onToggleOfflineMode={handleToggleOfflineMode}
             />
           )}
         </div>
@@ -891,6 +1025,27 @@ export const YouTubeView = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* 5. User Profile & Mode Switcher Modal */}
+      {showProfileManagerModal && (
+        <UserProfileManagerModal
+          isOpen={showProfileManagerModal}
+          onClose={() => setShowProfileManagerModal(false)}
+        />
+      )}
+
+      {/* 6. Video Profile & Tags Editor Modal */}
+      {videoProfileModalTarget && (
+        <VideoProfileModal
+          isOpen={Boolean(videoProfileModalTarget)}
+          video={videoProfileModalTarget}
+          onClose={() => setVideoProfileModalTarget(null)}
+          onUpdate={() => {
+            setOfflineVideosCount(loadOfflineVideos().length);
+            setProfilesCount(Object.keys(loadAllVideoProfiles()).length);
+          }}
+        />
       )}
     </div>
   );

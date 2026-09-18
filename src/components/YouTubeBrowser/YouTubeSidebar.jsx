@@ -14,7 +14,11 @@ import {
   HelpCircle,
   Activity,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  HardDriveDownload,
+  User,
+  WifiOff,
+  Wifi
 } from 'lucide-react';
 
 export const YouTubeSidebar = ({
@@ -24,6 +28,10 @@ export const YouTubeSidebar = ({
   onToggleCollapse,
   historyCount = 0,
   queueCount = 0,
+  offlineCount = 0,
+  profilesCount = 0,
+  isOfflineMode = false,
+  onToggleOfflineMode,
   onOpenDiagnostics,
   onOpenShortcuts
 }) => {
@@ -38,6 +46,8 @@ export const YouTubeSidebar = ({
   ];
 
   const libraryNav = [
+    { id: 'offline', label: 'Offline Vault', icon: HardDriveDownload, badge: offlineCount },
+    { id: 'profiles', label: 'Video Profiles', icon: User, badge: profilesCount },
     { id: 'history', label: 'History', icon: History, badge: historyCount },
     { id: 'queue', label: 'Up Next Queue', icon: ListMusic, badge: queueCount }
   ];
@@ -78,6 +88,42 @@ export const YouTubeSidebar = ({
         </div>
 
         <div className="h-px bg-zinc-850 mx-2" />
+
+        {/* Offline Mode Switch in Sidebar */}
+        {!isCollapsed && onToggleOfflineMode && (
+          <div className="px-1">
+            <button
+              type="button"
+              onClick={onToggleOfflineMode}
+              className={`w-full p-2.5 rounded-xl border flex items-center justify-between transition cursor-pointer text-left ${
+                isOfflineMode
+                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-xs'
+                  : 'bg-zinc-900/60 border-zinc-800/80 text-zinc-400 hover:bg-zinc-850'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {isOfflineMode ? (
+                  <WifiOff className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                ) : (
+                  <Wifi className="w-3.5 h-3.5 shrink-0" />
+                )}
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold leading-tight">
+                    {isOfflineMode ? 'Offline Mode ON' : 'Offline Mode'}
+                  </div>
+                  <div className="text-[9px] text-zinc-500 truncate leading-tight">
+                    {isOfflineMode ? 'Cached vault active' : 'Click to go offline'}
+                  </div>
+                </div>
+              </div>
+              <div
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  isOfflineMode ? 'bg-emerald-400 shadow-xs shadow-emerald-400 animate-pulse' : 'bg-zinc-600'
+                }`}
+              />
+            </button>
+          </div>
+        )}
 
         {/* Library Section */}
         <div className="space-y-1">

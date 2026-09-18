@@ -215,12 +215,15 @@ app.get("/api/youtube/resolve", async (req, res) => {
       thumbnail = data.thumbnail_url || thumbnail;
     }
 
+    const channelAvatarUrl = `/api/youtube/channel-avatar?channel=${encodeURIComponent(channel)}&videoId=${videoId}`;
+
     res.json({
       ok: true,
       id: videoId,
       title,
       channel,
       thumbnail,
+      channelAvatar: channelAvatarUrl,
       proxiedThumbnail: `/api/youtube/thumbnail?id=${videoId}`,
       directWebUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`,
       noCookieUrl: `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`,
@@ -236,6 +239,7 @@ app.get("/api/youtube/resolve", async (req, res) => {
       title: "YouTube Video",
       channel: "YouTube Creator",
       thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      channelAvatar: `/api/youtube/channel-avatar?channel=YouTube&videoId=${videoId}`,
       proxiedThumbnail: `/api/youtube/thumbnail?id=${videoId}`,
       noCookieUrl: `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`,
       translateTunnelUrl: `https://translate.google.com/translate?sl=auto&tl=en&u=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D${videoId}`,
@@ -518,43 +522,97 @@ app.get("/api/youtube/proxy-player/:id", (req, res) => {
 });
 
 
-// Linwize Unblocked YouTube Search API
+// In-memory cache for authentic YouTube channel profile pictures
+const KNOWN_CHANNEL_AVATARS_SERVER: Record<string, string> = {
+  'blender foundation': 'https://yt3.ggpht.com/ytc/AIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY=s176-c-k-c0x00ffffff-no-rj',
+  'google for developers': 'https://yt3.ggpht.com/Jrfy3VrP1QDikidneCoruk9MmhsQsEAgeQSELZtL2fn1pKxCjh2ohk7derV33UpetVZwt-DuRQ=s176-c-k-c0x00ffffff-no-rj',
+  'lofi girl': 'https://yt3.ggpht.com/P2GSa5qZ0deWYGMqnq6cnWoWdxtXzK9s09ls0s_OlIMKx_3Vwjl3tdotbkLFjRmCPN1p7ox6=s176-c-k-c0x00ffffff-no-rj',
+  'officialpsy': 'https://yt3.ggpht.com/kJ8zwS_VhJ0TE-XDumnshGQ86hazfhHjjU4xn80Dc8xmSghA_2xw4OJTHaGreyeoro6q_vcT=s176-c-k-c0x00ffffff-no-rj',
+  'ed sheeran': 'https://yt3.ggpht.com/pZQ5JMD4EOI8TcNYAPTzMexe_fC0CKnb_hYlV4rPfIzmDidF239fH1XKmzkeT30XSg7fxNwc_w=s176-c-k-c0x00ffffff-no-rj',
+  'fireplace atmosphere': 'https://yt3.ggpht.com/X9cdvZkyEsR9JD5ZhQZgLnXveDlNNz6_E8YtCDbDzC2DK3tROcQc1uDdSXz_Oj3UkXdTVBS_=s176-c-k-c0x00ffffff-no-rj',
+  'veritasium': 'https://yt3.ggpht.com/7vCbvtCqtjQ3YLgsJt7Y952MQV1sBvhllSCSxHP8_sVZdcPCBrITfhkN2RdyCuwPnsByq-1GoA=s176-c-k-c0x00ffffff-no-rj',
+  'mrbeast': 'https://yt3.ggpht.com/nxYrc_1_2f77DoBadyxMTmv7ZpRZapHR5jbuYe7PlPd5cIRJxtNNEYyOC0ZsxaDyJJzXrnJiuDE=s176-c-k-c0x00ffffff-no-rj',
+  'mark rober': 'https://yt3.ggpht.com/ytc/AIdro_ksXY2REjZ6gYKSgnWT5jC_zT9mX900vyFtVinR8KbHww=s176-c-k-c0x00ffffff-no-rj',
+  'kurzgesagt – in a nutshell': 'https://yt3.ggpht.com/ytc/AIdro_n1Ribd7LwdP_qKtqWL3ZDfIgv9M1d6g78VwpHGXVR2Ir4=s176-c-k-c0x00ffffff-no-rj',
+  '3blue1brown': 'https://yt3.ggpht.com/ytc/AIdro_nFzZFPLxPZRHcE3SSwzdrbuWqfoWYwLAu0_2iO6blQYAU=s176-c-k-c0x00ffffff-no-rj',
+  'crashcourse': 'https://yt3.ggpht.com/E454zI2spNFZsN_wgJPTHjMsqs1fFqb_qp4PYanWuyaXQJp98wKEV1kIQYlR57epaweO5P8v=s176-c-k-c0x00ffffff-no-rj',
+  'nasa': 'https://yt3.ggpht.com/eIf5fNPcIcj9ig-wZBeq4stFy1lgjWTW1nLT5dYlFkHZprZ03QBiMcbpwNMB6XSBjrSFGtAGQg=s176-c-k-c0x00ffffff-no-rj',
+  'rick astley': 'https://yt3.ggpht.com/MOWpaiGJdgN4aKMI-NGQLL4jMVP3aDORlQpOBWooi0GSE2TGt4_9ncyepk1pCh-yWQ795AhPbw=s176-c-k-c0x00ffffff-no-rj',
+  'jawed': 'https://yt3.ggpht.com/uI3VE4PVqvCy0xnWLqMJnEzyBUm3T8VHOCp4ee-1RxdHqKXCdUE_qXYQnpf9AfuEoIPactVyDhM=s176-c-k-c0x00ffffff-no-rj',
+  'jacob + katie schwarz': 'https://yt3.ggpht.com/cwlOSPsmMDwWYJtb_ple4M_-FtiIXBg_aDl2tm9JzpTscH7MJAa7U-3vVL4w5v47N9h6pR80=s176-c-k-c0x00ffffff-no-rj',
+  'mkbhd': 'https://yt3.googleusercontent.com/qu4TmIaYUlS41-dJ9gZ7DUR3nilvmB5_11i6OKSdvNnBNiyOusZP1bMN6ICnuxtjFBb6ioKgRQ=s160-c-k-c0x00ffffff-no-rj',
+  'marques brownlee': 'https://yt3.googleusercontent.com/qu4TmIaYUlS41-dJ9gZ7DUR3nilvmB5_11i6OKSdvNnBNiyOusZP1bMN6ICnuxtjFBb6ioKgRQ=s160-c-k-c0x00ffffff-no-rj',
+  'linus tech tips': 'https://yt3.googleusercontent.com/gnvYLhXy8FAlPXZ2RTrkrgj-5kyt0vdE2FUGVOiKGdEZIa-wN5A-7nwZBlWJLzUMmoh1NWAU=s160-c-k-c0x00ffffff-no-rj',
+  'ted': 'https://yt3.googleusercontent.com/ytc/AIdro_koIFcCOrvh0KThLNOiazAIDu6hcs8bjkGNwe1f6A_OYm8=s160-c-k-c0x00ffffff-no-rj',
+  'smartereveryday': 'https://yt3.googleusercontent.com/ytc/AIdro_l59Ewmp0DHZBRWbY9dVqjd2_mWwvrn8ad0bJfmdbMRYcA=s160-c-k-c0x00ffffff-no-rj',
+  'vsauce': 'https://yt3.googleusercontent.com/ytc/AIdro_mpYedipdXUXCKkwjQEeFrepFlDHZ0LiczqWeKyG0YmJvA=s160-c-k-c0x00ffffff-no-rj',
+  'ign': 'https://yt3.googleusercontent.com/4jRpju9vRtgoIA6SxuIomVcCmjub6ydA1TzGRHts853ZzxRITi41gxP50jTuGBdUlvAgehZJK8Y=s160-c-k-c0x00ffffff-no-rj',
+  'pewdiepie': 'https://yt3.googleusercontent.com/vik8mAiwHQbXiFyKfZ3__p55_VBdGvwxPpuPJBBwdbF0PjJxikXhrP-C3nLQAMAxGNd_-xQCIg=s160-c-k-c0x00ffffff-no-rj',
+  'bbc': 'https://yt3.googleusercontent.com/ZJXeYEqiW-S6m2aq4Od06PhnzX-mub-BhhFADsAirgfljCE3rrPm46_FRZCc0IaGgEu78z9KUlU=s160-c-k-c0x00ffffff-no-rj',
+  'national geographic': 'https://yt3.googleusercontent.com/-FOFg8o1y4dAHDB2MvhORHnLMOaaOKnaNUNsrU-U57Eac6gjB5VO8sYJQC1KkULGQvKP2XpArA=s160-c-k-c0x00ffffff-no-rj'
+};
+
+const channelAvatarCache = new Map<string, string>();
+for (const [k, v] of Object.entries(KNOWN_CHANNEL_AVATARS_SERVER)) {
+  channelAvatarCache.set(k, v);
+}
+
+// Linwize Unblocked YouTube Search API with Exact Creator Channel Avatars & Infinite Pagination
 app.get("/api/youtube/search", async (req, res) => {
   const query = (req.query.q as string || "").trim();
+  const page = Math.max(1, parseInt(req.query.page as string || "1", 10));
   if (!query) {
-    return res.json({ results: [] });
+    return res.json({ results: [], page: 1, hasMore: false });
   }
 
   try {
-    const url = "https://www.youtube.com/results?search_query=" + encodeURIComponent(query);
+    // Generate varied query parameters or filters based on page number to yield unique subsequent batches
+    let targetQuery = query;
+    let spParam = "";
+    if (page === 2) {
+      targetQuery = `${query} full`;
+      spParam = "&sp=CAI%253D"; // sort by upload date or expanded results
+    } else if (page === 3) {
+      targetQuery = `${query} video`;
+    } else if (page === 4) {
+      targetQuery = `${query} hd`;
+    } else if (page > 4) {
+      const qualifiers = ["official", "clips", "stream", "live", "episodes", "special", "highlights", "best"];
+      const qIndex = (page - 5) % qualifiers.length;
+      targetQuery = `${query} ${qualifiers[qIndex]}`;
+    }
+
+    const url = "https://www.youtube.com/results?search_query=" + encodeURIComponent(targetQuery) + spParam;
     const ytRes = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
       },
-      signal: AbortSignal.timeout(6000)
+      signal: AbortSignal.timeout(7000)
     });
 
     if (!ytRes.ok) {
-      return res.status(502).json({ error: "Failed to query YouTube", results: [] });
+      return res.status(502).json({ error: "Failed to query YouTube", results: [], page, hasMore: false });
     }
 
     const html = await ytRes.text();
     const match = html.match(/ytInitialData\s*=\s*({.+?});<\/script>/);
     if (!match) {
-      return res.json({ results: [] });
+      return res.json({ results: [], page, hasMore: false });
     }
 
     const data = JSON.parse(match[1]);
     const sectionList = data.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
     const results: any[] = [];
+    const seenIds = new Set<string>();
 
     for (const section of sectionList) {
       const itemSection = section.itemSectionRenderer?.contents || [];
       for (const item of itemSection) {
         const v = item.videoRenderer;
-        if (v && v.videoId) {
+        if (v && v.videoId && !seenIds.has(v.videoId)) {
+          seenIds.add(v.videoId);
           const thumbs = v.thumbnail?.thumbnails || [];
           const thumbUrl = thumbs[thumbs.length - 1]?.url || `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`;
           const titleText = v.title?.runs?.map((r: any) => r.text).join("") || v.title?.simpleText || "Untitled";
@@ -563,6 +621,29 @@ app.get("/api/youtube/search", async (req, res) => {
           const viewsText = v.viewCountText?.simpleText || v.shortViewCountText?.simpleText || "Available";
           const descText = v.detailedMetadataSnippets?.[0]?.snippetText?.runs?.map((r: any) => r.text).join("") || "";
 
+          // Extract exact channel avatar from video renderer
+          const chanThumbs = v.channelThumbnailSupportedRenderers?.channelThumbnailWithLinkRenderer?.thumbnail?.thumbnails || [];
+          let rawAvatar = chanThumbs[chanThumbs.length - 1]?.url || "";
+          if (rawAvatar && rawAvatar.startsWith("//")) {
+            rawAvatar = "https:" + rawAvatar;
+          }
+
+          if (rawAvatar && channelText) {
+            channelAvatarCache.set(channelText.toLowerCase(), rawAvatar);
+          }
+
+          // Verified badge check
+          const ownerBadges = v.ownerBadges || [];
+          const isVerified = ownerBadges.some((b: any) => {
+            const tooltip = b.metadataBadgeRenderer?.tooltip || b.metadataBadgeRenderer?.style || "";
+            return /verified|official/i.test(tooltip);
+          });
+
+          // Proxy avatar so school firewalls never block it
+          const channelAvatar = rawAvatar
+            ? `/api/youtube/avatar-proxy?url=${encodeURIComponent(rawAvatar)}`
+            : `/api/youtube/channel-avatar?channel=${encodeURIComponent(channelText)}&videoId=${v.videoId}`;
+
           results.push({
             id: v.videoId,
             title: titleText,
@@ -570,20 +651,321 @@ app.get("/api/youtube/search", async (req, res) => {
             duration: durationText,
             views: viewsText,
             thumbnail: thumbUrl,
+            proxiedThumbnail: `/api/youtube/thumbnail?id=${v.videoId}`,
+            channelAvatar,
+            rawChannelAvatar: rawAvatar,
+            isVerified,
             description: descText
           });
 
-          if (results.length >= 24) break;
+          if (results.length >= 36) break;
         }
       }
-      if (results.length >= 24) break;
+      if (results.length >= 36) break;
     }
 
-    res.json({ results });
+    res.json({ results, page, hasMore: results.length > 0 });
   } catch (error: any) {
     console.error("YouTube search error:", error.message);
-    res.status(500).json({ error: error.message, results: [] });
+    res.status(500).json({ error: error.message, results: [], page, hasMore: false });
   }
+});
+
+// In-memory feed cache for fast home feed loading
+interface CachedFeed {
+  timestamp: number;
+  videos: any[];
+}
+const feedCache = new Map<string, CachedFeed>();
+
+// YouTube Algorithmic Home Feed Endpoint (Pulls real live videos across categories with exact avatars)
+app.get("/api/youtube/feed", async (req, res) => {
+  const category = (req.query.category as string || "All").trim();
+  const querySeed = (req.query.seed as string || req.query.q as string || "").trim();
+  const cacheKey = `${category.toLowerCase()}_${querySeed.toLowerCase()}`;
+
+  const cached = feedCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < 10 * 60 * 1000 && cached.videos.length > 0) {
+    return res.json({ ok: true, source: "cache", category, videos: cached.videos });
+  }
+
+  // Determine optimal search query for authentic category content
+  let searchQuery = "popular trending videos 2026";
+  if (querySeed) {
+    searchQuery = `${querySeed} videos`;
+  } else if (category === "Gaming") {
+    searchQuery = "popular gaming playthroughs highlights 2026";
+  } else if (category === "Music & Lofi" || category === "Music") {
+    searchQuery = "lofi hip hop chill beats synthwave live radio";
+  } else if (category === "Science & Tech") {
+    searchQuery = "veritasium mark rober science technology engineering discoveries";
+  } else if (category === "Education") {
+    searchQuery = "3blue1brown crashcourse kurzgesagt educational lessons";
+  } else if (category === "Comedy & Classics") {
+    searchQuery = "funny viral classic video clips compilation";
+  } else if (category === "Documentaries") {
+    searchQuery = "4k 8k nature wildlife history documentary full";
+  } else if (category === "⭐ Guaranteed Working") {
+    searchQuery = "open movie blender official creative commons 4k";
+  }
+
+  try {
+    const url = "https://www.youtube.com/results?search_query=" + encodeURIComponent(searchQuery);
+    const ytRes = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      },
+      signal: AbortSignal.timeout(6500)
+    });
+
+    if (!ytRes.ok) {
+      if (cached && cached.videos.length > 0) {
+        return res.json({ ok: true, source: "stale_cache", category, videos: cached.videos });
+      }
+      return res.json({ ok: false, error: "Upstream error", videos: [] });
+    }
+
+    const html = await ytRes.text();
+    const match = html.match(/ytInitialData\s*=\s*({.+?});<\/script>/);
+    if (!match) {
+      return res.json({ ok: false, error: "Parse error", videos: [] });
+    }
+
+    const data = JSON.parse(match[1]);
+    const sectionList = data.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
+    const videos: any[] = [];
+    const seenIds = new Set<string>();
+
+    for (const section of sectionList) {
+      const itemSection = section.itemSectionRenderer?.contents || [];
+      for (const item of itemSection) {
+        const candidates: any[] = [];
+        if (item.videoRenderer) candidates.push(item.videoRenderer);
+        if (item.shelfRenderer?.content?.verticalListRenderer?.items) {
+          for (const it of item.shelfRenderer.content.verticalListRenderer.items) {
+            if (it.videoRenderer) candidates.push(it.videoRenderer);
+          }
+        }
+        if (item.shelfRenderer?.content?.horizontalListRenderer?.items) {
+          for (const it of item.shelfRenderer.content.horizontalListRenderer.items) {
+            if (it.videoRenderer) candidates.push(it.videoRenderer);
+          }
+        }
+
+        for (const v of candidates) {
+          if (!v.videoId || seenIds.has(v.videoId)) continue;
+          seenIds.add(v.videoId);
+
+          const titleText = v.title?.runs?.map((r: any) => r.text).join("") || v.title?.simpleText || "Untitled";
+          const channelText = v.ownerText?.runs?.map((r: any) => r.text).join("") || "YouTube Creator";
+          const durationText = v.lengthText?.simpleText || "Stream";
+          const viewsText = v.viewCountText?.simpleText || v.shortViewCountText?.simpleText || "Available";
+          const descText = v.detailedMetadataSnippets?.[0]?.snippetText?.runs?.map((r: any) => r.text).join("") || "";
+
+          // Exact creator channel thumbnail directly extracted from YouTube video renderer
+          const chanThumbs = v.channelThumbnailSupportedRenderers?.channelThumbnailWithLinkRenderer?.thumbnail?.thumbnails || [];
+          let rawAvatar = chanThumbs[chanThumbs.length - 1]?.url || "";
+          if (rawAvatar && rawAvatar.startsWith("//")) {
+            rawAvatar = "https:" + rawAvatar;
+          }
+
+          if (rawAvatar && channelText) {
+            channelAvatarCache.set(channelText.toLowerCase(), rawAvatar);
+            channelAvatarCache.set(`vid_${v.videoId}`, rawAvatar);
+          }
+
+          const ownerBadges = v.ownerBadges || [];
+          const isVerified = ownerBadges.some((b: any) => {
+            const tooltip = b.metadataBadgeRenderer?.tooltip || b.metadataBadgeRenderer?.style || "";
+            return /verified|official/i.test(tooltip);
+          });
+
+          const channelAvatar = rawAvatar
+            ? `/api/youtube/avatar-proxy?url=${encodeURIComponent(rawAvatar)}`
+            : `/api/youtube/channel-avatar?channel=${encodeURIComponent(channelText)}&videoId=${v.videoId}`;
+
+          videos.push({
+            id: v.videoId,
+            title: titleText,
+            channel: channelText,
+            category: category === "All" ? "Trending" : category,
+            duration: durationText,
+            views: viewsText,
+            thumbnail: `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`,
+            proxiedThumbnail: `/api/youtube/thumbnail?id=${v.videoId}`,
+            channelAvatar,
+            rawChannelAvatar: rawAvatar,
+            isVerified,
+            description: descText
+          });
+
+          if (videos.length >= 36) break;
+        }
+        if (videos.length >= 36) break;
+      }
+      if (videos.length >= 36) break;
+    }
+
+    if (videos.length > 0) {
+      feedCache.set(cacheKey, { timestamp: Date.now(), videos });
+    }
+
+    res.json({ ok: true, count: videos.length, category, videos });
+  } catch (err: any) {
+    console.error("YouTube feed fetch error:", err.message);
+    if (cached && cached.videos.length > 0) {
+      return res.json({ ok: true, source: "fallback_cache", category, videos: cached.videos });
+    }
+    res.json({ ok: false, error: err.message, videos: [] });
+  }
+});
+
+// Authentic Creator Avatar Proxy (Caches and proxies Google/YouTube profile images without CORS or school blocks)
+app.get("/api/youtube/avatar-proxy", async (req, res) => {
+  const targetUrl = (req.query.url as string || "").trim();
+  if (!targetUrl) {
+    return res.redirect("https://ui-avatars.com/api/?name=YT&background=27272a&color=f59e0b&size=160&bold=true");
+  }
+
+  try {
+    const parsed = new URL(targetUrl.startsWith("//") ? "https:" + targetUrl : targetUrl);
+    const allowedHosts = [
+      "yt3.ggpht.com",
+      "yt3.googleusercontent.com",
+      "lh3.googleusercontent.com",
+      "i.ytimg.com",
+      "images.unsplash.com",
+      "ui-avatars.com"
+    ];
+
+    const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith("." + h)) ||
+      parsed.hostname.includes("googleusercontent.com") ||
+      parsed.hostname.includes("ggpht.com");
+
+    if (!isAllowed) {
+      return res.redirect("https://ui-avatars.com/api/?name=YT&background=27272a&color=f59e0b&size=160&bold=true");
+    }
+
+    const imageRes = await fetch(parsed.toString(), {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Referer": "https://www.youtube.com/"
+      },
+      signal: AbortSignal.timeout(5000)
+    });
+
+    if (!imageRes.ok) {
+      return res.redirect("https://ui-avatars.com/api/?name=YT&background=27272a&color=f59e0b&size=160&bold=true");
+    }
+
+    const buffer = await imageRes.arrayBuffer();
+    res.setHeader("Content-Type", imageRes.headers.get("content-type") || "image/jpeg");
+    res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.send(Buffer.from(buffer));
+  } catch {
+    res.redirect("https://ui-avatars.com/api/?name=YT&background=27272a&color=f59e0b&size=160&bold=true");
+  }
+});
+
+// Dynamic YouTube Channel Avatar Scraper Endpoint
+app.get("/api/youtube/channel-avatar", async (req, res) => {
+  const channel = (req.query.channel as string || "").trim();
+  const videoId = (req.query.videoId as string || "").trim();
+  const key = channel.toLowerCase();
+
+  // 1. Check in-memory avatar cache
+  if (key && channelAvatarCache.has(key)) {
+    const cachedUrl = channelAvatarCache.get(key)!;
+    return res.redirect(`/api/youtube/avatar-proxy?url=${encodeURIComponent(cachedUrl)}`);
+  }
+
+  // 2. Fetch watch page if videoId provided to extract exact owner avatar
+  if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+    try {
+      const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept-Language": "en-US,en;q=0.9"
+        },
+        signal: AbortSignal.timeout(5000)
+      });
+      if (pageRes.ok) {
+        const text = await pageRes.text();
+        const m = text.match(/ytInitialData\s*=\s*({.+?});<\/script>/);
+        if (m) {
+          const jd = JSON.parse(m[1]);
+          const contents = jd.contents?.twoColumnWatchNextResults?.results?.results?.contents || [];
+          for (const item of contents) {
+            const videoOwner = item?.videoSecondaryInfoRenderer?.owner?.videoOwnerRenderer;
+            const thumbs = videoOwner?.thumbnail?.thumbnails;
+            if (thumbs && thumbs.length > 0) {
+              let bestAvatar = thumbs[thumbs.length - 1].url;
+              if (bestAvatar.startsWith("//")) bestAvatar = "https:" + bestAvatar;
+              if (key) channelAvatarCache.set(key, bestAvatar);
+              channelAvatarCache.set(`vid_${videoId}`, bestAvatar);
+              return res.redirect(`/api/youtube/avatar-proxy?url=${encodeURIComponent(bestAvatar)}`);
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Search query fallback
+  if (channel) {
+    try {
+      const searchRes = await fetch(`https://www.youtube.com/results?search_query=${encodeURIComponent(channel)}`, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept-Language": "en-US,en;q=0.9"
+        },
+        signal: AbortSignal.timeout(5000)
+      });
+      if (searchRes.ok) {
+        const searchHtml = await searchRes.text();
+        const sm = searchHtml.match(/ytInitialData\s*=\s*({.+?});<\/script>/);
+        if (sm) {
+          const sData = JSON.parse(sm[1]);
+          const sectionList = sData.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents || [];
+          for (const sec of sectionList) {
+            const items = sec.itemSectionRenderer?.contents || [];
+            for (const item of items) {
+              const chanRenderer = item.channelRenderer;
+              if (chanRenderer) {
+                const cThumbs = chanRenderer.thumbnail?.thumbnails || [];
+                if (cThumbs.length > 0) {
+                  let url = cThumbs[cThumbs.length - 1].url;
+                  if (url.startsWith("//")) url = "https:" + url;
+                  channelAvatarCache.set(key, url);
+                  return res.redirect(`/api/youtube/avatar-proxy?url=${encodeURIComponent(url)}`);
+                }
+              }
+              const vRenderer = item.videoRenderer;
+              if (vRenderer) {
+                const owner = vRenderer.ownerText?.runs?.map((r: any) => r.text).join("") || "";
+                const ownerLower = owner.toLowerCase();
+                // Strict validation: only accept videoRenderer avatar if creator ownerText matches target channel
+                if (ownerLower && (ownerLower.includes(key) || key.includes(ownerLower))) {
+                  const vThumbs = vRenderer.channelThumbnailSupportedRenderers?.channelThumbnailWithLinkRenderer?.thumbnail?.thumbnails || [];
+                  if (vThumbs.length > 0) {
+                    let url = vThumbs[vThumbs.length - 1].url;
+                    if (url.startsWith("//")) url = "https:" + url;
+                    channelAvatarCache.set(key, url);
+                    return res.redirect(`/api/youtube/avatar-proxy?url=${encodeURIComponent(url)}`);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  res.redirect(`https://ui-avatars.com/api/?name=${encodeURIComponent(channel || "YT")}&background=27272a&color=f59e0b&size=160&bold=true`);
 });
 
 // Unblocked Thumbnail Proxy (Bypasses school blocks on i.ytimg.com)
@@ -594,23 +976,32 @@ app.get("/api/youtube/thumbnail", async (req, res) => {
   }
 
   try {
-    const thumbUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-    const imageRes = await fetch(thumbUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Referer": "https://www.youtube.com/"
-      },
-      signal: AbortSignal.timeout(4000)
-    });
+    const candidates = [
+      `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`,
+      `https://i.ytimg.com/vi/${videoId}/default.jpg`
+    ];
 
-    if (!imageRes.ok) {
-      return res.redirect("https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80");
+    for (const thumbUrl of candidates) {
+      try {
+        const imageRes = await fetch(thumbUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Referer": "https://www.youtube.com/"
+          },
+          signal: AbortSignal.timeout(3500)
+        });
+
+        if (imageRes.ok) {
+          const buffer = await imageRes.arrayBuffer();
+          res.setHeader("Content-Type", imageRes.headers.get("content-type") || "image/jpeg");
+          res.setHeader("Cache-Control", "public, max-age=86400");
+          return res.send(Buffer.from(buffer));
+        }
+      } catch {}
     }
 
-    const buffer = await imageRes.arrayBuffer();
-    res.setHeader("Content-Type", imageRes.headers.get("content-type") || "image/jpeg");
-    res.setHeader("Cache-Control", "public, max-age=86400");
-    res.send(Buffer.from(buffer));
+    res.redirect("https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80");
   } catch {
     res.redirect("https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80");
   }
@@ -735,30 +1126,24 @@ app.get("/api/youtube/stream-info/:id", async (req, res) => {
 
 // Secondary Worker: Direct Video Stream Proxy for Linwize Filter Bypass
 // Streams any direct media URL (.mp4, .webm, .m3u8, etc.) through this Cloud Run origin
-// Forwarding HTTP Range headers for smooth seeking and zero CORS issues
-app.all("/api/proxy/stream", async (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Range, Accept, Origin, Content-Type, Authorization, X-Requested-With");
-  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges, Content-Type");
-
-  if (req.method === "OPTIONS") {
-    return res.status(204).end();
-  }
-
-  const targetUrl = (req.query.url as string || "").trim();
-  if (!targetUrl) {
-    return res.status(400).json({ error: "Missing required 'url' query parameter" });
+// Forwarding HTTP Range headers for smooth seeking and zero CORS issues, with recursive server-side redirect following
+function pipeUpstreamMedia(
+  targetUrl: string,
+  req: express.Request,
+  res: express.Response,
+  redirectCount = 0
+) {
+  if (redirectCount > 5) {
+    if (!res.headersSent) res.status(508).json({ error: "Too many upstream redirects" });
+    return;
   }
 
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(targetUrl);
-    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-      return res.status(400).json({ error: "Protocol must be http or https" });
-    }
   } catch {
-    return res.status(400).json({ error: "Invalid target URL format" });
+    if (!res.headersSent) res.status(400).json({ error: "Invalid target URL format" });
+    return;
   }
 
   const clientRange = req.headers.range;
@@ -775,69 +1160,116 @@ app.all("/api/proxy/stream", async (req, res) => {
     upstreamHeaders["Range"] = clientRange;
   }
 
-  try {
-    const upstreamReq = protocolModule.request(targetUrl, {
-      method: req.method === "HEAD" ? "HEAD" : "GET",
-      headers: upstreamHeaders,
-      timeout: 15000
-    }, (upstreamRes) => {
-      const statusCode = upstreamRes.statusCode || 200;
+  const upstreamReq = protocolModule.request(targetUrl, {
+    method: req.method === "HEAD" ? "HEAD" : "GET",
+    headers: upstreamHeaders,
+    timeout: 20000
+  }, (upstreamRes) => {
+    const statusCode = upstreamRes.statusCode || 200;
 
-      // Handle standard 3xx redirects to follow upstream relocation
-      if ([301, 302, 303, 307, 308].includes(statusCode) && upstreamRes.headers.location) {
-        const redirectUrl = new URL(upstreamRes.headers.location, targetUrl).toString();
-        return res.redirect(302, `/api/proxy/stream?url=${encodeURIComponent(redirectUrl)}`);
-      }
-
-      res.status(statusCode);
-
-      const forwardHeaders = [
-        "content-type",
-        "content-range",
-        "content-length",
-        "accept-ranges",
-        "last-modified",
-        "etag"
-      ];
-
-      for (const [header, val] of Object.entries(upstreamRes.headers)) {
-        if (val && forwardHeaders.includes(header.toLowerCase())) {
-          res.setHeader(header, val);
-        }
-      }
-
-      res.setHeader("Accept-Ranges", "bytes");
-      res.setHeader("Cache-Control", "public, max-age=86400");
-
-      if (req.method === "HEAD") {
-        return res.end();
-      }
-
-      upstreamRes.pipe(res);
-    });
-
-    upstreamReq.on("timeout", () => {
-      upstreamReq.destroy();
-      if (!res.headersSent) {
-        res.status(504).json({ error: "Secondary worker upstream gateway timeout" });
-      }
-    });
-
-    upstreamReq.on("error", (err) => {
-      if (!res.headersSent) {
-        res.status(502).json({ error: "Upstream stream fetch failed", details: err.message });
-      }
-    });
-
-    req.on("close", () => {
-      upstreamReq.destroy();
-    });
-
-    upstreamReq.end();
-  } catch (err: any) {
-    if (!res.headersSent) {
-      res.status(500).json({ error: "Internal proxy worker failure", details: err.message });
+    // Seamlessly follow 3xx redirects internally so Linwize never sees the destination CDN node
+    if ([301, 302, 303, 307, 308].includes(statusCode) && upstreamRes.headers.location) {
+      const nextLocation = new URL(upstreamRes.headers.location, targetUrl).toString();
+      upstreamRes.resume(); // consume and discard response data to free socket
+      return pipeUpstreamMedia(nextLocation, req, res, redirectCount + 1);
     }
+
+    res.status(statusCode);
+
+    const forwardHeaders = [
+      "content-type",
+      "content-range",
+      "content-length",
+      "accept-ranges",
+      "last-modified",
+      "etag"
+    ];
+
+    for (const [header, val] of Object.entries(upstreamRes.headers)) {
+      if (val && forwardHeaders.includes(header.toLowerCase())) {
+        res.setHeader(header, val);
+      }
+    }
+
+    res.setHeader("Accept-Ranges", "bytes");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+
+    if (req.method === "HEAD") {
+      return res.end();
+    }
+
+    upstreamRes.pipe(res);
+  });
+
+  upstreamReq.on("timeout", () => {
+    upstreamReq.destroy();
+    if (!res.headersSent) {
+      res.status(504).json({ error: "Secondary worker upstream gateway timeout" });
+    }
+  });
+
+  upstreamReq.on("error", (err) => {
+    if (!res.headersSent) {
+      res.status(502).json({ error: "Upstream stream fetch failed", details: err.message });
+    }
+  });
+
+  req.on("close", () => {
+    upstreamReq.destroy();
+  });
+
+  upstreamReq.end();
+}
+
+app.all("/api/proxy/stream", async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Range, Accept, Origin, Content-Type, Authorization, X-Requested-With");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges, Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
+  const targetUrl = (req.query.url as string || "").trim();
+  if (!targetUrl) {
+    return res.status(400).json({ error: "Missing required 'url' query parameter" });
+  }
+
+  pipeUpstreamMedia(targetUrl, req, res);
+});
+
+// Dedicated Movie Stream API endpoint for Linwize Filter Bypass
+app.all("/api/movie/stream/:id", async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Range, Accept, Origin, Content-Type, Authorization, X-Requested-With");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges, Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
+  const idOrUrl = (req.params.id || req.query.url as string || "").trim();
+  if (!idOrUrl) {
+    return res.status(400).json({ error: "Missing movie ID" });
+  }
+
+  try {
+    let directUrl = "";
+    if (idOrUrl.startsWith("http://") || idOrUrl.startsWith("https://")) {
+      directUrl = idOrUrl;
+    } else {
+      const resolved = await resolveArchiveMovie(idOrUrl);
+      directUrl = resolved.directUrl;
+    }
+
+    pipeUpstreamMedia(directUrl, req, res);
+  } catch (err: any) {
+    // Fallback direct url construction if metadata API is slow
+    const fallbackUrl = `https://archive.org/download/${idOrUrl}/${idOrUrl}.mp4`;
+    pipeUpstreamMedia(fallbackUrl, req, res);
   }
 });
 

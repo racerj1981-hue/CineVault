@@ -86,8 +86,22 @@ export const PlayerView = ({
   };
 
   const rawCandidate = extractDirectCandidate(item, iframeSrc);
-  const activeStreamUrl = rawCandidate || resolvedStreamUrl;
-  const isDirectCandidate = !!activeStreamUrl;
+  
+  // Linwize Cloud Relay URL: routes media stream through local Cloud Run origin with Byte Range support
+  const linwizeRelayUrl = rawCandidate
+    ? `/api/proxy/stream?url=${encodeURIComponent(rawCandidate)}`
+    : (item?.archiveId ? `/api/movie/stream/${encodeURIComponent(item.archiveId)}` : '');
+
+  // Streaming node state: default to 'relay' for guaranteed Linwize school filter bypass
+  const [streamNode, setStreamNode] = useState('relay'); // 'relay' | 'direct' | 'cors'
+
+  const activeStreamUrl = (streamNode === 'relay' && linwizeRelayUrl)
+    ? linwizeRelayUrl
+    : (streamNode === 'cors' && rawCandidate)
+    ? `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawCandidate)}`
+    : (rawCandidate || resolvedStreamUrl);
+
+  const isDirectCandidate = !!(rawCandidate || resolvedStreamUrl || linwizeRelayUrl);
 
   // Direct Stream is the primary and direct playback mode
   const [playbackMode, setPlaybackMode] = useState('direct');
@@ -99,7 +113,7 @@ export const PlayerView = ({
     setIsVideoLoading(true);
     setIsIframeLoading(true);
     setStreamError(false);
-  }, [item?.id, activeStreamUrl, playbackMode, reloadKey]);
+  }, [item?.id, activeStreamUrl, playbackMode, streamNode, reloadKey]);
 
   // Fullscreen handler
   const toggleFullscreen = async () => {
@@ -154,7 +168,7 @@ export const PlayerView = ({
       win.document.body.style.background = '#000';
       const playerUrl = item.archiveId
         ? `/api/movie/player/${encodeURIComponent(item.archiveId)}`
-        : proxiedStreamUrl || activeStreamUrl;
+        : (linwizeRelayUrl || activeStreamUrl);
       const frame = win.document.createElement('iframe');
       frame.style.width = '100%';
       frame.style.height = '100%';
@@ -235,6 +249,27 @@ export const PlayerView = ({
                     Embed
                   </button>
                 </div>
+              )}
+
+              {/* Linwize Relay Toggle */}
+              {playbackMode === 'direct' && linwizeRelayUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = streamNode === 'relay' ? 'direct' : 'relay';
+                    setStreamNode(next);
+                    setStreamError(false);
+                    setIsVideoLoading(true);
+                  }}
+                  title={streamNode === 'relay' ? 'Linwize Filter Bypass Active. Click to switch to Direct Origin.' : 'Direct Origin Active. Click to switch to Linwize Relay.'}
+                  className={`px-2.5 py-1 rounded-lg transition font-medium cursor-pointer text-[11px] flex items-center gap-1 border ${
+                    streamNode === 'relay'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs'
+                      : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
+                  }`}
+                >
+                  <span>{streamNode === 'relay' ? '🛡️ Linwize Relay' : '⚡ Direct Origin'}</span>
+                </button>
               )}
 
               {/* Cloaked Tab Button */}
@@ -407,8 +442,34 @@ export const PlayerView = ({
                         className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white transition cursor-pointer shadow-md flex items-center gap-1.5"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
-                        <span>Retry Direct Stream</span>
+                        <span>Retry Stream</span>
                       </button>
+                      {linwizeRelayUrl && streamNode !== 'relay' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStreamNode('relay');
+                            setStreamError(false);
+                            setIsVideoLoading(true);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition cursor-pointer shadow-md flex items-center gap-1.5"
+                        >
+                          <span>🛡️ Switch to Linwize Cloud Relay</span>
+                        </button>
+                      )}
+                      {linwizeRelayUrl && streamNode === 'relay' && rawCandidate && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStreamNode('direct');
+                            setStreamError(false);
+                            setIsVideoLoading(true);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition cursor-pointer flex items-center gap-1.5"
+                        >
+                          <span>⚡ Switch to Direct Origin</span>
+                        </button>
+                      )}
                       {iframeSrc && (
                         <button
                           type="button"
