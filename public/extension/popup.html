@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineVault</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body {
+      width: 320px;
+      background: #09090b;
+      color: #f4f4f5;
+      padding: 16px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #27272a;
+    }
+    .icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      object-fit: contain;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+    }
+    .brand h1 {
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+    .brand span {
+      color: #f59e0b;
+    }
+    .brand p {
+      font-size: 11px;
+      color: #a1a1aa;
+      margin-top: 2px;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      border-radius: 10px;
+      border: none;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .btn-primary {
+      background: #f59e0b;
+      color: #09090b;
+    }
+    .btn-primary:hover {
+      background: #fbbf24;
+    }
+    .btn-secondary {
+      background: #18181b;
+      color: #e4e4e7;
+      border: 1px solid #27272a;
+    }
+    .btn-secondary:hover {
+      background: #27272a;
+    }
+    .footer {
+      font-size: 10px;
+      color: #71717a;
+      text-align: center;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="icon128.png" alt="CineVault" class="icon">
+    <div class="brand">
+      <h1>CINE<span>VAULT</span></h1>
+      <p>Unblocked Cinema & YouTube</p>
+    </div>
+  </div>
+
+  <button id="launchAppBtn" class="btn btn-primary">🎬 Launch CineVault</button>
+  <button id="launchYouTubeBtn" class="btn btn-secondary">📺 Open YouTube Browser</button>
+
+  <div class="footer">
+    Bypasses school filters & Linwize with native streaming
+  </div>
+
+  <script>
+    const APP_URL = "https://ais-dev-aicedc2tpxib7tvdzgw5tp-57183576837.us-west2.run.app";
+
+    document.getElementById("launchAppBtn").addEventListener("click", () => {
+      chrome.tabs.create({ url: APP_URL });
+    });
+
+    document.getElementById("launchYouTubeBtn").addEventListener("click", () => {
+      chrome.tabs.create({ url: APP_URL + "/#youtube" });
+    });
+  </script>
+</body>
+</html>

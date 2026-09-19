@@ -617,11 +617,21 @@ export async function fetchYouTubeFeed(category = 'All', seed = '') {
 }
 
 // Get resilient thumbnail URL that bypasses Linwize block on i.ytimg.com
-export function getVideoThumbnail(videoId, defaultThumbnail) {
-  if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-    return `/api/youtube/thumbnail?id=${videoId}`;
+export function getVideoThumbnail(videoIdOrObject, defaultThumbnail) {
+  let vidId = '';
+  let fallback = defaultThumbnail;
+
+  if (videoIdOrObject && typeof videoIdOrObject === 'object') {
+    vidId = videoIdOrObject.id || '';
+    fallback = videoIdOrObject.thumbnail || defaultThumbnail;
+  } else if (typeof videoIdOrObject === 'string') {
+    vidId = videoIdOrObject.trim();
   }
-  return defaultThumbnail || `https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80`;
+
+  if (vidId && /^[a-zA-Z0-9_-]{11}$/.test(vidId)) {
+    return `/api/youtube/thumbnail?id=${vidId}`;
+  }
+  return fallback || (vidId ? `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg` : `https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80`);
 }
 
 // Resolve YouTube video metadata and proxy player URLs via backend unblocked resolver

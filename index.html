@@ -5,52 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CineVault</title>
     <script>
-      // Automatically normalize GitHub Pages path without trailing slash (e.g. /CineVault -> /CineVault/)
-      (function() {
-        var p = window.location.pathname;
-        if (!p.endsWith('/') && !p.split('/').pop().includes('.')) {
-          window.history.replaceState(null, '', p + '/' + window.location.search + window.location.hash);
-        }
-      })();
+      // Purge any registered service workers and caches to prevent duplicate React runtime instances
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (var i = 0; i < registrations.length; i++) {
+            registrations[i].unregister();
+          }
+        });
+      }
+      if ('caches' in window) {
+        caches.keys().then(function(keys) {
+          for (var i = 0; i < keys.length; i++) {
+            caches.delete(keys[i]);
+          }
+        });
+      }
     </script>
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" id="favicon-link" />
-    <link rel="manifest" href="manifest.json" />
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" id="favicon-link" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
+    <link rel="icon" type="image/png" sizes="128x128" href="/icon-128.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png" />
+    <link rel="shortcut icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#09090b" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="CineVault" />
-    <meta name="description" content="Curated cinema collection and media archive with unblocked streaming and offline mode." />
+    <meta name="description" content="Curated cinema collection and media archive with unblocked streaming." />
     <meta property="og:title" content="CineVault" />
-    <meta property="og:description" content="Curated cinema collection and media archive with unblocked streaming and offline mode." />
+    <meta property="og:description" content="Curated cinema collection and media archive with unblocked streaming." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <script>
-      // Register Service Worker for Offline Mode (relative path aware for GitHub Pages & custom subpaths)
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          try {
-            var path = window.location.pathname;
-            var baseDir = path.endsWith('/') ? path : path.substring(0, path.lastIndexOf('/') + 1);
-            var swUrl = baseDir + 'sw.js';
-            navigator.serviceWorker.register(swUrl, { scope: baseDir })
-              .then((reg) => {
-                console.log('[CineVault PWA] Service worker registered successfully with scope:', reg.scope);
-              })
-              .catch((err) => {
-                console.warn('[CineVault PWA] Service worker registration failed:', err);
-              });
-          } catch (e) {
-            console.warn('[CineVault PWA] SW init error:', e);
-          }
-        });
-      }
-    </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="./src/main.jsx"></script>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
 

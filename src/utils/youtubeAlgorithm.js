@@ -9,6 +9,8 @@
 // 7. Watch Page Up Next Co-visitation and Co-occurrence Ranking
 
 const ALGO_PROFILE_STORAGE_KEY = 'cinevault_yt_algo_profile';
+const INTERACTIONS_STORAGE_KEY = 'cinevault_yt_video_interactions';
+const SUBSCRIPTIONS_STORAGE_KEY = 'cinevault_yt_subscriptions';
 
 // Common English stopwords to ignore in semantic extraction
 const STOP_WORDS = new Set([
@@ -107,9 +109,131 @@ export function loadAlgoProfile() {
 export function saveAlgoProfile(profile) {
   try {
     localStorage.setItem(ALGO_PROFILE_STORAGE_KEY, JSON.stringify(profile));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cinevault_algo_updated', { detail: profile }));
+    }
   } catch (e) {
     console.warn('[YouTubeAlgo] Failed to save profile:', e);
   }
+}
+
+// --- Video Interaction Persistence (Likes / Dislikes) ---
+export function loadAllInteractions() {
+  try {
+    const raw = localStorage.getItem(INTERACTIONS_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.warn('[YouTubeInteractions] Failed to load interactions:', e);
+  }
+  return {};
+}
+
+export function getVideoInteraction(videoId) {
+  if (!videoId) return { hasLiked: false, hasDisliked: false };
+  const all = loadAllInteractions();
+  const item = all[videoId];
+  return {
+    hasLiked: item === 'like',
+    hasDisliked: item === 'dislike'
+  };
+}
+
+export function setVideoInteraction(videoId, video, actionType) {
+  if (!videoId) return;
+  const all = loadAllInteractions();
+  if (actionType === 'like' || actionType === 'dislike') {
+    all[videoId] = actionType;
+  } else {
+    delete all[videoId];
+  }
+
+  try {
+    localStorage.setItem(INTERACTIONS_STORAGE_KEY, JSON.stringify(all));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cinevault_interaction_updated', {
+        detail: { videoId, actionType }
+      }));
+    }
+  } catch (e) {
+    console.warn('[YouTubeInteractions] Failed to save interaction:', e);
+  }
+
+  // Also update algorithmic profile
+  const profile = loadAlgoProfile();
+  recordInteractionEvent(videoId, video, actionType, profile);
+}
+
+// --- Channel Subscriptions Persistence ---
+export function getSubscribedChannels() {
+  try {
+    const raw = localStorage.getItem(SUBSCRIPTIONS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.warn('[YouTubeSubscriptions] Failed to load subscriptions:', e);
+  }
+  return [];
+}
+
+export function isChannelSubscribed(channelName) {
+  if (!channelName) return false;
+  const subs = getSubscribedChannels();
+  return subs.some((s) => (typeof s === 'string' ? s : s.channel) === channelName);
+}
+
+export function toggleChannelSubscription(channelName, channelAvatar = null) {
+  if (!channelName) return false;
+  const subs = getSubscribedChannels();
+  const index = subs.findIndex((s) => (typeof s === 'string' ? s : s.channel) === channelName);
+  let nextState = false;
+  let updated = [];
+
+  if (index >= 0) {
+    // Unsubscribe
+    updated = subs.filter((_, i) => i !== index);
+    nextState = false;
+  } else {
+    // Subscribe
+    updated = [
+      ...subs,
+      {
+        channel: channelName,
+        avatar: channelAvatar,
+        subscribedAt: Date.now()
+      }
+    ];
+    nextState = true;
+  }
+
+  try {
+    localStorage.setItem(SUBSCRIPTIONS_STORAGE_KEY, JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cinevault_subscriptions_updated', {
+        detail: { channel: channelName, isSubscribed: nextState, subscriptions: updated }
+      }));
+    }
+  } catch (e) {
+    console.warn('[YouTubeSubscriptions] Failed to save subscriptions:', e);
+  }
+
+  // Update algo profile channel affinity
+  const profile = loadAlgoProfile();
+  if (nextState) {
+    profile.channelAffinities = {
+      ...profile.channelAffinities,
+      [channelName]: (profile.channelAffinities[channelName] || 0) + 8
+    };
+  } else {
+    profile.channelAffinities = {
+      ...profile.channelAffinities,
+      [channelName]: Math.max(0, (profile.channelAffinities[channelName] || 0) - 4)
+    };
+  }
+  saveAlgoProfile(profile);
+
+  return nextState;
 }
 
 // Detect active session intent based on temporal cluster of recent watches

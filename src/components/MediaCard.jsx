@@ -32,11 +32,17 @@ export const MediaCard = ({
             src={item.thumbnail}
             alt={item.title}
             onLoad={() => setImgLoaded(true)}
-            onError={() => setImgError(true)}
-            referrerPolicy="no-referrer"
-            className={`w-full h-full object-cover object-center group-hover:scale-105 transition-all duration-500 ease-out select-none pointer-events-none ${
-              imgLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-98'
-            }`}
+            onError={() => {
+              if (item.id && !item.thumbnail?.includes('/api/youtube/thumbnail')) {
+                // Try unblocked backend proxy thumbnail
+                item.thumbnail = `/api/youtube/thumbnail?id=${item.id}`;
+                setImgLoaded(true);
+              } else {
+                setImgError(true);
+              }
+            }}
+            referrerPolicy="strict-origin-when-cross-origin"
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-all duration-500 ease-out select-none pointer-events-none opacity-100"
             loading="lazy"
           />
         ) : (

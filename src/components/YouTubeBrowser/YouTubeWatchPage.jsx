@@ -9,8 +9,7 @@ import {
   Sparkles,
   CheckCircle2,
   Globe,
-  AlertTriangle,
-  X,
+  Bell,
   Clock,
   ExternalLink,
   MessageSquare,
@@ -30,7 +29,11 @@ import {
   recordWatchEvent,
   recordInteractionEvent,
   getUpNextRecommendations,
-  loadAlgoProfile
+  loadAlgoProfile,
+  getVideoInteraction,
+  setVideoInteraction,
+  isChannelSubscribed,
+  toggleChannelSubscription
 } from '../../utils/youtubeAlgorithm';
 import {
   isVideoSavedOffline,
@@ -63,7 +66,6 @@ export const YouTubeWatchPage = ({
   const [shareNotice, setShareNotice] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   const [captionsEnabled, setCaptionsEnabled] = useState(false);
-  const [autoFailoverToast, setAutoFailoverToast] = useState(false);
   const [upNextFilter, setUpNextFilter] = useState('all'); // 'all' | 'channel' | 'related'
   const [comments, setComments] = useState([
     {
@@ -103,13 +105,27 @@ export const YouTubeWatchPage = ({
         })
       : `https://www.youtube.com/embed/${video?.id || 'aqz-KE-bpKQ'}?autoplay=1&rel=0&playsinline=1`;
 
-  // Check offline state
+  // Sync persisted like/dislike and subscription state
   useEffect(() => {
     if (video?.id) {
       setIsOfflineSaved(isVideoSavedOffline(video.id));
+      const interaction = getVideoInteraction(video.id);
+      setHasLiked(interaction.hasLiked);
+      setHasDisliked(interaction.hasDisliked);
+    }
+    if (video?.channel) {
+      setIsSubscribed(isChannelSubscribed(video.channel));
     }
     setIsOfflineMode(loadOfflineModeState());
+  }, [video?.id, video?.channel]);
+
+  // Compute stable base likes count
+  const baseLikes = useMemo(() => {
+    const seed = (video?.id || 'video').split('').reduce((acc, c) => (acc * 31 + c.charCodeAt(0)) % 100000, 7);
+    return Math.abs(seed) + 12400;
   }, [video?.id]);
+
+  const currentLikes = baseLikes + (hasLiked ? 1 : 0) - (hasDisliked ? 1 : 0);
 
   const handleToggleOfflineSave = () => {
     const nextState = toggleSaveVideoOffline(video);
@@ -127,12 +143,6 @@ export const YouTubeWatchPage = ({
   // Reset loading state on video change or node change
   useEffect(() => {
     setIsVideoLoading(true);
-    setAutoFailoverToast(false);
-    const timer = setTimeout(() => {
-      // If still loading after 9 seconds, offer failover switch
-      setAutoFailoverToast(true);
-    }, 9000);
-    return () => clearTimeout(timer);
   }, [video?.id, selectedNodeIndex, reloadKey]);
 
   // Handle Share
@@ -145,31 +155,35 @@ export const YouTubeWatchPage = ({
     setTimeout(() => setShareNotice(false), 2000);
   };
 
-  // Handle Like
+  // Handle Like (with durable persistence across navigation)
   const handleToggleLike = () => {
     if (hasLiked) {
       setHasLiked(false);
-      setLikesCount((prev) => prev - 1);
+      setVideoInteraction(video.id, video, 'none');
     } else {
       setHasLiked(true);
-      setLikesCount((prev) => prev + 1);
-      if (hasDisliked) setHasDisliked(false);
-      const profile = loadAlgoProfile();
-      recordInteractionEvent(video.id, video, 'like', profile);
+      setHasDisliked(false);
+      setVideoInteraction(video.id, video, 'like');
     }
   };
 
-  // Handle Dislike
+  // Handle Dislike (with durable persistence across navigation)
   const handleToggleDislike = () => {
     if (hasDisliked) {
       setHasDisliked(false);
+      setVideoInteraction(video.id, video, 'none');
     } else {
       setHasDisliked(true);
-      if (hasLiked) {
-        setHasLiked(false);
-        setLikesCount((prev) => prev - 1);
-      }
+      setHasLiked(false);
+      setVideoInteraction(video.id, video, 'dislike');
     }
+  };
+
+  // Handle Subscribe (with durable persistence across navigation)
+  const handleToggleSubscribe = () => {
+    if (!video?.channel) return;
+    const nextState = toggleChannelSubscription(video.channel, video.channelAvatar);
+    setIsSubscribed(nextState);
   };
 
   // Handle Add Comment
@@ -193,7 +207,6 @@ export const YouTubeWatchPage = ({
     const nextIdx = (selectedNodeIndex + 1) % YOUTUBE_PROXY_NODES.length;
     onSelectNode(nextIdx);
     setReloadKey((prev) => prev + 1);
-    setAutoFailoverToast(false);
   };
 
   const recommendedVideos = useMemo(() => {
@@ -214,7 +227,7 @@ export const YouTubeWatchPage = ({
                 <img
                   src={getVideoThumbnail(video.id, video.thumbnail)}
                   alt=""
-                  referrerPolicy="no-referrer"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-20 scale-110 pointer-events-none transition-opacity duration-700"
                 />
                 <div className="relative z-20 flex flex-col items-center justify-center">
@@ -268,45 +281,8 @@ export const YouTubeWatchPage = ({
                 }`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                 allowFullScreen
-                referrerPolicy="no-referrer"
+                referrerPolicy="strict-origin-when-cross-origin"
               />
-            )}
-
-            {/* Failover Toast if Buffering */}
-            {autoFailoverToast && currentNode.id !== 'native' && (
-              <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 max-w-md z-30 bg-zinc-950/95 border border-amber-500/60 rounded-xl p-3 shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-bottom-2">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span className="text-zinc-200">
-                    Buffering on <strong className="text-amber-300">{currentNode.name}</strong>?
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    onClick={cycleNextMirror}
-                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-lg cursor-pointer transition text-[11px]"
-                  >
-                    ⚡ Switch Mirror
-                  </button>
-                  <button
-                    onClick={() => {
-                      const nativeIdx = YOUTUBE_PROXY_NODES.findIndex((n) => n.id === 'native');
-                      if (nativeIdx !== -1) onSelectNode(nativeIdx);
-                      setReloadKey((prev) => prev + 1);
-                      setAutoFailoverToast(false);
-                    }}
-                    className="px-2 py-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-lg cursor-pointer transition text-[11px]"
-                  >
-                    ⭐ Native
-                  </button>
-                  <button
-                    onClick={() => setAutoFailoverToast(false)}
-                    className="p-1 text-zinc-400 hover:text-white rounded cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
             )}
           </div>
 
@@ -390,14 +366,23 @@ export const YouTubeWatchPage = ({
                   <span className="text-xs text-zinc-400">1.2M subscribers</span>
                 </div>
                 <button
-                  onClick={() => setIsSubscribed(!isSubscribed)}
-                  className={`ml-2 px-4 py-2 rounded-full text-xs font-bold transition cursor-pointer ${
+                  onClick={handleToggleSubscribe}
+                  className={`ml-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 select-none ${
                     isSubscribed
-                      ? 'bg-zinc-800 text-zinc-200 hover:bg-zinc-700'
-                      : 'bg-white text-zinc-950 hover:bg-zinc-200'
+                      ? 'bg-zinc-700 hover:bg-zinc-600 text-zinc-100 border border-zinc-600/50 shadow-xs'
+                      : 'bg-white text-zinc-950 font-bold hover:bg-zinc-200 shadow-xs'
                   }`}
+                  title={isSubscribed ? 'Subscribed to channel' : 'Subscribe to channel'}
                 >
-                  {isSubscribed ? 'Subscribed ✓' : 'Subscribe'}
+                  {isSubscribed ? (
+                    <>
+                      <Bell className="w-3.5 h-3.5 fill-current text-zinc-200 shrink-0" />
+                      <span>Subscribed</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-zinc-400 shrink-0 -mr-0.5" />
+                    </>
+                  ) : (
+                    <span>Subscribe</span>
+                  )}
                 </button>
               </div>
 
@@ -412,7 +397,7 @@ export const YouTubeWatchPage = ({
                     }`}
                   >
                     <ThumbsUp className={`w-3.5 h-3.5 ${hasLiked ? 'fill-amber-400' : ''}`} />
-                    <span>{(likesCount / 1000).toFixed(1)}k</span>
+                    <span>{(currentLikes / 1000).toFixed(1)}k</span>
                   </button>
                   <div className="w-px h-4 bg-zinc-800" />
                   <button
@@ -617,7 +602,16 @@ export const YouTubeWatchPage = ({
                       src={thumb}
                       alt={rec.title}
                       loading="lazy"
-                      referrerPolicy="no-referrer"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      onError={(e) => {
+                        if (!e.currentTarget.dataset.triedFallback1) {
+                          e.currentTarget.dataset.triedFallback1 = 'true';
+                          e.currentTarget.src = `https://i.ytimg.com/vi/${rec.id}/hqdefault.jpg`;
+                        } else if (!e.currentTarget.dataset.triedFallback2) {
+                          e.currentTarget.dataset.triedFallback2 = 'true';
+                          e.currentTarget.src = rec.thumbnail || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80';
+                        }
+                      }}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                     {rec.duration && (

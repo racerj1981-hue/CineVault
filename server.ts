@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import http from "http";
 import https from "https";
 import { execFile } from "child_process";
@@ -173,6 +174,18 @@ app.get("/api/movie/player/:id", async (req, res) => {
 
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(html);
+});
+
+// Chrome Extension Zip Download Endpoint
+app.get("/api/download-chrome-extension", (_req, res) => {
+  const zipPath = path.join(process.cwd(), "public", "cinevault-chrome-extension.zip");
+  if (fs.existsSync(zipPath)) {
+    res.setHeader("Content-Disposition", 'attachment; filename="cinevault-chrome-extension.zip"');
+    res.setHeader("Content-Type", "application/zip");
+    res.sendFile(zipPath);
+  } else {
+    res.status(404).json({ error: "Extension package not found" });
+  }
 });
 
 // Advanced YouTube Resolver API (Resolves metadata, oEmbed info & bypass links without blocking)
@@ -971,8 +984,12 @@ app.get("/api/youtube/channel-avatar", async (req, res) => {
 // Unblocked Thumbnail Proxy (Bypasses school blocks on i.ytimg.com)
 app.get("/api/youtube/thumbnail", async (req, res) => {
   const videoId = (req.query.id as string || "").trim();
+  const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#18181b"/><stop offset="100%" stop-color="#09090b"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><circle cx="320" cy="170" r="42" fill="#f59e0b" fill-opacity="0.15" stroke="#f59e0b" stroke-width="2"/><polygon points="312,154 336,170 312,186" fill="#f59e0b"/><text x="320" y="240" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#a1a1aa" text-anchor="middle">YouTube Video (${videoId || 'Stream'})</text></svg>`;
+
   if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-    return res.redirect("https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80");
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.send(fallbackSvg);
   }
 
   try {
@@ -1001,9 +1018,13 @@ app.get("/api/youtube/thumbnail", async (req, res) => {
       } catch {}
     }
 
-    res.redirect("https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80");
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.send(fallbackSvg);
   } catch {
-    res.redirect("https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80");
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.send(fallbackSvg);
   }
 });
 

@@ -20,6 +20,13 @@ export const DEFAULT_USER_PROFILES = [
     description: 'General unblocked browsing & personalized algorithm'
   },
   {
+    id: 'linwize',
+    name: 'Linwize School Bypass',
+    avatarEmoji: '🛡️',
+    color: 'amber',
+    description: 'School filter bypass mode, maximum stealth, and Linwize cloud relay'
+  },
+  {
     id: 'study',
     name: 'Study & Focus',
     avatarEmoji: '🎧',
@@ -116,7 +123,17 @@ export function loadUserProfiles() {
     const raw = localStorage.getItem(PROFILES_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Ensure default built-in profiles like 'linwize' are included
+        const existingIds = new Set(parsed.map((p) => p.id));
+        const missing = DEFAULT_USER_PROFILES.filter((p) => !existingIds.has(p.id));
+        if (missing.length > 0) {
+          const merged = [...parsed, ...missing];
+          saveUserProfiles(merged);
+          return merged;
+        }
+        return parsed;
+      }
     }
   } catch (e) {
     console.warn('[Profiles] Failed to load user profiles:', e);

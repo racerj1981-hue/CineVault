@@ -72,7 +72,16 @@ export const YouTubeVideoCard = ({
           src={thumbUrl}
           alt={video.title}
           loading="lazy"
-          referrerPolicy="no-referrer"
+          referrerPolicy="strict-origin-when-cross-origin"
+          onError={(e) => {
+            if (!e.currentTarget.dataset.triedFallback1) {
+              e.currentTarget.dataset.triedFallback1 = 'true';
+              e.currentTarget.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
+            } else if (!e.currentTarget.dataset.triedFallback2) {
+              e.currentTarget.dataset.triedFallback2 = 'true';
+              e.currentTarget.src = video.thumbnail || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80';
+            }
+          }}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
 

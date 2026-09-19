@@ -11,7 +11,9 @@ import {
   ExternalLink,
   Laptop,
   Play,
-  Globe
+  Globe,
+  Download,
+  Puzzle
 } from 'lucide-react';
 import { CLOAK_PRESETS, DEFAULT_SETTINGS, applyTabCloak } from '../utils/cloaker';
 
@@ -276,7 +278,68 @@ export const SettingsModal = ({
             </div>
           </div>
 
-          {/* Section 5: Catalog & Cinema Defaults */}
+          {/* Section 5: Chrome Extension & Web App */}
+          <div className="border-t border-zinc-800/80 pt-5">
+            <div className="flex items-center gap-2 mb-2">
+              <Puzzle className="w-4 h-4 text-amber-400" />
+              <h3 className="font-semibold text-white text-sm">Chrome Extension & Web App</h3>
+            </div>
+            <p className="text-xs text-zinc-400 mb-3">
+              Download or install CineVault directly into Google Chrome. The app and extension display the identical official CineVault cinema clapperboard icon as shown on the website.
+            </p>
+
+            {/* Icon Preview Card */}
+            <div className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 flex items-center justify-between gap-4 mb-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/pwa-192x192.png"
+                  alt="CineVault App Icon"
+                  className="w-10 h-10 rounded-xl shadow-md border border-zinc-800 object-contain bg-zinc-950 p-0.5"
+                />
+                <div>
+                  <span className="text-xs font-bold text-white block">Official CineVault Icon</span>
+                  <span className="text-[11px] text-zinc-400 block">
+                    Clapperboard & gold play motif matched for Chrome extension & PWA
+                  </span>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 text-xs font-semibold border border-emerald-500/30 shrink-0">
+                Synchronized
+              </span>
+            </div>
+
+            {/* Download Chrome Extension action */}
+            <div className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div>
+                  <span className="text-xs font-bold text-zinc-200 block">
+                    Download Chrome Extension (.zip)
+                  </span>
+                  <span className="text-[11px] text-zinc-400 block mt-0.5">
+                    Pre-packaged Manifest V3 extension ready to load in Chrome Developer Mode
+                  </span>
+                </div>
+                <a
+                  href="/api/download-chrome-extension"
+                  download="cinevault-chrome-extension.zip"
+                  className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition shadow-sm cursor-pointer shrink-0"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Extension</span>
+                </a>
+              </div>
+
+              {/* Installation steps */}
+              <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800/80 text-[11px] text-zinc-400 space-y-1">
+                <div className="font-semibold text-zinc-300 text-xs mb-1">How to load in Google Chrome:</div>
+                <p>1. Download and extract <code className="text-amber-400">cinevault-chrome-extension.zip</code></p>
+                <p>2. Open <code className="text-amber-400">chrome://extensions</code> and turn ON <strong className="text-zinc-200">Developer mode</strong> (top right)</p>
+                <p>3. Click <strong className="text-zinc-200">Load unpacked</strong> and select the extracted folder</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 6: Catalog & Cinema Defaults */}
           <div className="border-t border-zinc-800/80 pt-5">
             <div className="flex items-center gap-2 mb-2">
               <Tv className="w-4 h-4 text-amber-400" />

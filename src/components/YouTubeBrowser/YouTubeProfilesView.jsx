@@ -89,6 +89,18 @@ export const YouTubeProfilesView = ({
     });
     const combined = Array.from(map.values());
 
+    if (activeFilter === 'linwize') {
+      return combined.filter(
+        (v) =>
+          v.isGuaranteed ||
+          v.category === 'Education' ||
+          v.category === 'Science & Tech' ||
+          v.category === 'Music & Lofi' ||
+          v.directStreamUrl ||
+          videoProfiles[v.id]?.tags?.some((t) => t.toLowerCase().includes('linwize') || t.toLowerCase().includes('school'))
+      );
+    }
+
     if (activeFilter === 'must_watch') {
       return combined.filter((v) => videoProfiles[v.id]?.status === 'must_watch');
     }
@@ -99,12 +111,8 @@ export const YouTubeProfilesView = ({
       );
     }
 
-    // 'all' shows all tagged + offline videos
-    return combined.filter((v) => {
-      const p = videoProfiles[v.id];
-      const isOff = offlineVideos.some((ov) => ov.id === v.id);
-      return p || isOff;
-    });
+    // 'all' shows all videos in vault
+    return combined;
   }, [activeFilter, offlineVideos, allVideos, videoProfiles, activeProfileId]);
 
   const handleToggleOfflineMode = () => {
@@ -112,6 +120,8 @@ export const YouTubeProfilesView = ({
     setIsOfflineMode(next);
     setOfflineModeState(next);
   };
+
+  const isLinwizeProfileActive = activeProfileId === 'linwize';
 
   return (
     <div className="flex-1 p-4 sm:p-6 overflow-y-auto no-scrollbar bg-zinc-950">
@@ -132,7 +142,24 @@ export const YouTubeProfilesView = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-stretch sm:self-auto">
+        <div className="flex items-center gap-2 self-stretch sm:self-auto flex-wrap">
+          {!isLinwizeProfileActive && (
+            <button
+              type="button"
+              onClick={() => {
+                const linwizeProf = profiles.find((p) => p.id === 'linwize');
+                if (linwizeProf) {
+                  setActiveProfileId('linwize');
+                  window.dispatchEvent(new CustomEvent('cinevault_profile_changed', { detail: 'linwize' }));
+                }
+              }}
+              className="px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-400 text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
+              title="Activate Linwize School Bypass Profile"
+            >
+              <span>🛡️ Linwize Mode</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleToggleOfflineMode}
@@ -168,7 +195,18 @@ export const YouTubeProfilesView = ({
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>All Tagged Videos</span>
+          <span>All Videos ({displayedVideos.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveFilter('linwize')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition cursor-pointer flex items-center gap-1.5 ${
+            activeFilter === 'linwize'
+              ? 'bg-emerald-500 text-zinc-950 font-bold'
+              : 'bg-zinc-900 border border-zinc-800 text-emerald-400 hover:bg-zinc-800'
+          }`}
+        >
+          <span>🛡️ Linwize Bypass Safe</span>
         </button>
 
         <button
@@ -217,9 +255,10 @@ export const YouTubeProfilesView = ({
               <div key={video.id} className="relative group">
                 <YouTubeVideoCard
                   video={video}
-                  onSelect={onSelectVideo}
-                  onOpenInNewTab={onOpenVideoInNewTab}
+                  onSelectVideo={onSelectVideo}
+                  onOpenVideoInNewTab={onOpenVideoInNewTab}
                   onAddToQueue={onAddToQueue}
+                  onOpenVideoProfileModal={onOpenVideoProfileModal}
                   isOffline={isSaved}
                 />
 

@@ -61,7 +61,7 @@ export const YouTubeRawMirror = ({ onSwitchToPortal }) => {
           src={selectedMirror}
           title="YouTube Live Mirror"
           className="w-full h-full border-0 absolute inset-0 bg-zinc-900"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
         />
