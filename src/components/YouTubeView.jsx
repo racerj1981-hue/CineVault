@@ -144,6 +144,7 @@ export const YouTubeView = ({
     }
   ]);
   const [activeTabId, setActiveTabId] = useState('tab-home');
+  const [feedRandomSeed, setFeedRandomSeed] = useState(() => Date.now());
 
   const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0];
   const browserContainerRef = useRef(null);
@@ -426,16 +427,39 @@ export const YouTubeView = ({
     }
   };
 
-  // Reload current view
+  // Reload current YouTube browser view without refreshing the whole website
   const handleReload = () => {
+    const newSeed = Date.now() + Math.floor(Math.random() * 10000);
+    setFeedRandomSeed(newSeed);
+
     updateTab(activeTab.id, { isLoading: true });
+
+    // Scroll YouTube feed to top
+    const feedContainer = document.getElementById('youtube-feed-scroll-container');
+    if (feedContainer) {
+      feedContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Dispatch global refresh event for YouTube browser feeds
+    window.dispatchEvent(new CustomEvent('cinevault_yt_refresh_feed', { detail: { seed: newSeed } }));
+
     setTimeout(() => {
       updateTab(activeTab.id, { isLoading: false });
     }, 400);
   };
 
-  // Home button
+  // Home button & YouTube icon tap handler - refreshes the YouTube browser (not the website), randomizes videos, and scrolls to top
   const handleGoHome = () => {
+    const newSeed = Date.now() + Math.floor(Math.random() * 10000);
+    setFeedRandomSeed(newSeed);
+
+    // Scroll YouTube feed container smoothly to top
+    const feedContainer = document.getElementById('youtube-feed-scroll-container');
+    if (feedContainer) {
+      feedContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Reset YouTube tab state with a quick reload progress bar
     navigateTabTo(activeTab.id, {
       url: 'https://www.youtube.com',
       title: 'YouTube',
@@ -443,8 +467,15 @@ export const YouTubeView = ({
       searchQuery: '',
       selectedSection: 'home',
       selectedCategory: 'All',
-      isLoading: false
+      isLoading: true
     });
+
+    // Dispatch refresh feed event with new random seed
+    window.dispatchEvent(new CustomEvent('cinevault_yt_refresh_feed', { detail: { seed: newSeed } }));
+
+    setTimeout(() => {
+      updateTab(activeTab.id, { isLoading: false });
+    }, 350);
   };
 
   // New Tab
@@ -872,6 +903,8 @@ export const YouTubeView = ({
               onOpenVideoProfileModal={(v) => setVideoProfileModalTarget(v)}
               isOfflineMode={isOfflineMode}
               onToggleOfflineMode={handleToggleOfflineMode}
+              feedRandomSeed={feedRandomSeed}
+              onRefreshFeed={(newSeed) => setFeedRandomSeed(newSeed)}
             />
           )}
         </div>

@@ -313,6 +313,274 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     duration: '5:37',
     thumbnail: 'https://i.ytimg.com/vi/1La4QzGeaaQ/hqdefault.jpg',
     description: 'Breathtaking 8K cinematic footage traveling through Machu Picchu, Cusco, and the Sacred Valley of Peru.'
+  },
+  {
+    id: 'jfKfPfyJRdk',
+    title: 'lofi sleep radio - beats to relax/sleep to',
+    channel: 'Lofi Girl',
+    channelAvatar: 'https://yt3.ggpht.com/P2GSa5qZ0deWYGMqnq6cnWoWdxtXzK9s09ls0s_OlIMKx_3Vwjl3tdotbkLFjRmCPN1p7ox6=s176-c-k-c0x00ffffff-no-rj',
+    category: 'Music & Lofi',
+    views: '88M+ views',
+    duration: '24/7 Stream',
+    thumbnail: 'https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg',
+    description: 'Soft and peaceful sleep radio to drift off to dreamland with gentle piano and downtempo beats.'
+  },
+  {
+    id: 'kJQP7kiw5Fk',
+    title: 'Luis Fonsi - Despacito ft. Daddy Yankee',
+    channel: 'Luis Fonsi',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_n0k541yG0e9Zl4r4qK0pT1g_aM2_l=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Music & Lofi',
+    views: '8.4B views',
+    duration: '4:41',
+    thumbnail: 'https://i.ytimg.com/vi/kJQP7kiw5Fk/hqdefault.jpg',
+    description: 'The global Latin pop phenomenon and one of the most streamed videos of all time.'
+  },
+  {
+    id: 'fJ9rUzIMcZQ',
+    title: 'Queen – Bohemian Rhapsody (Official Video Remastered)',
+    channel: 'Queen Official',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_ljzK9zV7wA0s8jQ2_x9w1mE2_q=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Music & Lofi',
+    views: '1.7B views',
+    duration: '5:59',
+    thumbnail: 'https://i.ytimg.com/vi/fJ9rUzIMcZQ/hqdefault.jpg',
+    description: 'The monumental rock masterpiece by Queen, remastered in high-definition audio and visual clarity.'
+  },
+  {
+    id: 'lp-EO5I60KA',
+    title: 'The Weeknd - Blinding Lights (Official Music Video)',
+    channel: 'The Weeknd',
+    channelAvatar: 'https://yt3.googleusercontent.com/eN19qF9rGZ1p2hY_e3hB2_x7j9=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Music & Lofi',
+    views: '920M views',
+    duration: '4:20',
+    thumbnail: 'https://i.ytimg.com/vi/lp-EO5I60KA/hqdefault.jpg',
+    description: 'The chart-topping synthpop anthem by The Weeknd with 80s retro aesthetics and neon cinematography.'
+  },
+  {
+    id: 'ALZHF5UqnU4',
+    title: 'Marshmello ft. Bastille - Happier (Official Music Video)',
+    channel: 'Marshmello',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_k2P9xV4qL9w_1m=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Music & Lofi',
+    views: '1.2B views',
+    duration: '3:53',
+    thumbnail: 'https://i.ytimg.com/vi/ALZHF5UqnU4/hqdefault.jpg',
+    description: 'The uplifting and emotional hit by Marshmello and Bastille celebrating companionship and resilience.'
+  },
+  {
+    id: 'b6JzI7T5eio',
+    title: 'Grand Theft Auto VI Trailer 1 (Official 4K)',
+    channel: 'Rockstar Games',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_n2V7mK0pT1g_x8=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Gaming',
+    views: '230M views',
+    duration: '1:31',
+    thumbnail: 'https://i.ytimg.com/vi/b6JzI7T5eio/hqdefault.jpg',
+    description: 'Welcome to Leonida and Vice City. The record-breaking premiere trailer for GTA VI in ultra 4K.'
+  },
+  {
+    id: 'M_XwzBMTJaM',
+    title: 'Minecraft: Tricky Trials Update – Official Trailer',
+    channel: 'Minecraft',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nzY8qK1p=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Gaming',
+    views: '18M views',
+    duration: '2:15',
+    thumbnail: 'https://i.ytimg.com/vi/M_XwzBMTJaM/hqdefault.jpg',
+    description: 'Venture into the underground trial chambers with the Mace, Breeze mob, and crafter automation block.'
+  },
+  {
+    id: 'MmB9b5njVbA',
+    title: 'I Survived 100 Days in Hardcore Minecraft...',
+    channel: 'Luke TheNotable',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m9P2qX0p=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Gaming',
+    views: '35M views',
+    duration: '38:12',
+    thumbnail: 'https://i.ytimg.com/vi/MmB9b5njVbA/hqdefault.jpg',
+    description: 'Surviving 100 days of ultra-hardcore Minecraft without dying once, building an impregnable fortress.'
+  },
+  {
+    id: 'wBHS68jXoT8',
+    title: 'DanTDM - I Played Minecraft In VR For The First Time',
+    channel: 'DanTDM',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m5K0q=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Gaming',
+    views: '22M views',
+    duration: '18:45',
+    thumbnail: 'https://i.ytimg.com/vi/wBHS68jXoT8/hqdefault.jpg',
+    description: 'DanTDM puts on a VR headset and faces terrifying creepers and heights up-close in virtual reality.'
+  },
+  {
+    id: 'F9FqBxFq8_I',
+    title: 'WARNING: SCARIEST GAME IN YEARS | Five Nights at Freddy\'s - Part 1',
+    channel: 'Markiplier',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_l9Q2q=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Gaming',
+    views: '112M views',
+    duration: '17:34',
+    thumbnail: 'https://i.ytimg.com/vi/F9FqBxFq8_I/hqdefault.jpg',
+    description: 'Markiplier plays the legendary horror game that spawned a gaming phenomenon. Where it all began.'
+  },
+  {
+    id: 't1U-g4S_X_A',
+    title: 'Glitter Bomb 5.0 vs. Porch Pirates (Official Finale)',
+    channel: 'Mark Rober',
+    channelAvatar: 'https://yt3.ggpht.com/ytc/AIdro_ksXY2REjZ6gYKSgnWT5jC_zT9mX900vyFtVinR8KbHww=s176-c-k-c0x00ffffff-no-rj',
+    category: 'Science & Tech',
+    views: '85M views',
+    duration: '28:44',
+    thumbnail: 'https://i.ytimg.com/vi/t1U-g4S_X_A/hqdefault.jpg',
+    description: 'Mark Rober creates the most advanced engineering bait box ever with car horns, micro-drone tracking, and biodegradable glitter.'
+  },
+  {
+    id: 'L45Q1_psDqk',
+    title: 'What If We Detonated All Nuclear Bombs at Once?',
+    channel: 'Kurzgesagt – In a Nutshell',
+    channelAvatar: 'https://yt3.ggpht.com/ytc/AIdro_n1Ribd7LwdP_qKtqWL3ZDfIgv9M1d6g78VwpHGXVR2Ir4=s176-c-k-c0x00ffffff-no-rj',
+    category: 'Science & Tech',
+    views: '42M views',
+    duration: '11:05',
+    thumbnail: 'https://i.ytimg.com/vi/L45Q1_psDqk/hqdefault.jpg',
+    description: 'A scientific simulation exploring what would happen if humanity stacked all 15,000 nuclear weapons into one spot.'
+  },
+  {
+    id: 'AirpZq0J2uY',
+    title: 'Smartphone Awards 2024: Best Camera, Battery & Design',
+    channel: 'MKBHD',
+    channelAvatar: 'https://yt3.googleusercontent.com/qu4TmIaYUlS41-dJ9gZ7DUR3nilvmB5_11i6OKSdvNnBNiyOusZP1bMN6ICnuxtjFBb6ioKgRQ=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Science & Tech',
+    views: '8.9M views',
+    duration: '23:18',
+    thumbnail: 'https://i.ytimg.com/vi/AirpZq0J2uY/hqdefault.jpg',
+    description: 'Marques Brownlee hands out the official blind test trophies for the year’s finest technology devices.'
+  },
+  {
+    id: 'q3A6jUf_RjE',
+    title: 'How Rockets Work in Ultra Slow Motion (4K Phantom Camera)',
+    channel: 'SmarterEveryDay',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_l59Ewmp0DHZBRWbY9dVqjd2_mWwvrn8ad0bJfmdbMRYcA=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Science & Tech',
+    views: '19M views',
+    duration: '16:42',
+    thumbnail: 'https://i.ytimg.com/vi/q3A6jUf_RjE/hqdefault.jpg',
+    description: 'Destin captures rocket fuel ignition and fluid dynamics at 20,000 frames per second.'
+  },
+  {
+    id: 'fn3K35Ut64c',
+    title: 'Do You Love Me? Atlas & Spot Robot Dance Compilation',
+    channel: 'Boston Dynamics',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m9P2q=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Science & Tech',
+    views: '40M views',
+    duration: '2:53',
+    thumbnail: 'https://i.ytimg.com/vi/fn3K35Ut64c/hqdefault.jpg',
+    description: 'Boston Dynamics whole robotic crew celebrates breakthroughs in dynamic balance and coordination.'
+  },
+  {
+    id: 'aircAruvnKk',
+    title: 'But what is a neural network? | Deep learning, chapter 1',
+    channel: '3Blue1Brown',
+    channelAvatar: 'https://yt3.ggpht.com/ytc/AIdro_nFzZFPLxPZRHcE3SSwzdrbuWqfoWYwLAu0_2iO6blQYAU=s176-c-k-c0x00ffffff-no-rj',
+    category: 'Education',
+    views: '17M views',
+    duration: '19:13',
+    thumbnail: 'https://i.ytimg.com/vi/aircAruvnKk/hqdefault.jpg',
+    description: 'The clearest visual intuition for deep learning, neurons, weights, biases, and activation functions.'
+  },
+  {
+    id: 'HeQX2HjkcNo',
+    title: 'The Infinite Hotel Paradox – Jeff Dekofsky',
+    channel: 'TED-Ed',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_koIFcCOrvh0KThLNOiazAIDu6hcs8bjkGNwe1f6A_OYm8=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Education',
+    views: '24M views',
+    duration: '5:59',
+    thumbnail: 'https://i.ytimg.com/vi/HeQX2HjkcNo/hqdefault.jpg',
+    description: 'How can a full hotel with infinitely many rooms accommodate infinitely more guests? David Hilbert’s paradox.'
+  },
+  {
+    id: 'wTj1rGsmYps',
+    title: 'The Golden Ratio & Fibonacci Mystery in Nature',
+    channel: 'Numberphile',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nFzZFPLxPZRHcE3SSwzdrbuWqfoWYwLAu0_2iO6blQYAU=s176-c-k-c0x00ffffff-no-rj',
+    category: 'Education',
+    views: '11M views',
+    duration: '14:38',
+    thumbnail: 'https://i.ytimg.com/vi/wTj1rGsmYps/hqdefault.jpg',
+    description: 'Mathematicians reveal why the golden spiral appears throughout sunflower seeds, pinecones, and galaxies.'
+  },
+  {
+    id: 'G-Z_Uv5P-7g',
+    title: 'Dude Perfect - Real Life Trick Shots 2',
+    channel: 'Dude Perfect',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m9P2qX0p=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Comedy & Classics',
+    views: '95M views',
+    duration: '8:42',
+    thumbnail: 'https://i.ytimg.com/vi/G-Z_Uv5P-7g/hqdefault.jpg',
+    description: 'Insane everyday trick shots with Frisbees, basketballs, ping pong balls, and lawn chairs.'
+  },
+  {
+    id: 'm8e-CwtVcyU',
+    title: 'Daily Dose Of Internet - The Best Moments Of The Year',
+    channel: 'Daily Dose Of Internet',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m9P2q=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Comedy & Classics',
+    views: '28M views',
+    duration: '12:15',
+    thumbnail: 'https://i.ytimg.com/vi/m8e-CwtVcyU/hqdefault.jpg',
+    description: 'Wholesome, awe-inspiring, and mind-boggling viral clips curated from across the entire globe.'
+  },
+  {
+    id: 'e_z7rO_zK0I',
+    title: 'BBC Earth - Planet Earth II: Cities & Wildlife 4K',
+    channel: 'BBC',
+    channelAvatar: 'https://yt3.googleusercontent.com/ZJXeYEqiW-S6m2aq4Od06PhnzX-mub-BhhFADsAirgfljCE3rrPm46_FRZCc0IaGgEu78z9KUlU=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Documentaries',
+    views: '26M views',
+    duration: '4:48',
+    thumbnail: 'https://i.ytimg.com/vi/e_z7rO_zK0I/hqdefault.jpg',
+    description: 'Narrated by Sir David Attenborough, witnessing leopards prowling urban alleys and peregrine falcons soaring skyscrapers.'
+  },
+  {
+    id: 'n9r5s_2T_2g',
+    title: 'Mariana Trench: To The Deepest Place On Earth',
+    channel: 'National Geographic',
+    channelAvatar: 'https://yt3.googleusercontent.com/-FOFg8o1y4dAHDB2MvhORHnLMOaaOKnaNUNsrU-U57Eac6gjB5VO8sYJQC1KkULGQvKP2XpArA=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Documentaries',
+    views: '34M views',
+    duration: '45:10',
+    thumbnail: 'https://i.ytimg.com/vi/n9r5s_2T_2g/hqdefault.jpg',
+    description: 'Diving 36,000 feet down into the Challenger Deep, where alien-like bioluminescent sea creatures thrive under crushing pressure.'
+  },
+  {
+    id: 'eRsGyueVLvQ',
+    title: 'Sintel 4K (Official Open Movie by Blender Foundation)',
+    channel: 'Blender Foundation',
+    channelAvatar: 'https://yt3.ggpht.com/ytc/AIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY=s176-c-k-c0x00ffffff-no-rj',
+    category: '⭐ Guaranteed Working',
+    views: '12M views',
+    duration: '14:48',
+    thumbnail: 'https://i.ytimg.com/vi/eRsGyueVLvQ/hqdefault.jpg',
+    description: '⭐ 100% GUARANTEED TO WORK. The breathtaking open fantasy animation movie following a lonely warrior and baby dragon.',
+    isGuaranteed: true,
+    directStreamUrl: 'https://vjs.zencdn.net/v/oceans.mp4'
+  },
+  {
+    id: 'R6MlUcmOul8',
+    title: 'Tears of Steel 4K - Blender Sci-Fi VFX Movie',
+    channel: 'Blender Foundation',
+    channelAvatar: 'https://yt3.ggpht.com/ytc/AIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY=s176-c-k-c0x00ffffff-no-rj',
+    category: '⭐ Guaranteed Working',
+    views: '7.8M views',
+    duration: '12:14',
+    thumbnail: 'https://i.ytimg.com/vi/R6MlUcmOul8/hqdefault.jpg',
+    description: '⭐ 100% GUARANTEED TO WORK. Amsterdam dystopian science-fiction open film featuring futuristic mechs and CGI visual effects.',
+    isGuaranteed: true,
+    directStreamUrl: 'https://vjs.zencdn.net/v/oceans.mp4'
   }
 ];
 
@@ -597,7 +865,7 @@ export function getChannelAvatar(channelName, video) {
 }
 
 // Fetch live authentic YouTube feed across categories or custom interest seeds
-export async function fetchYouTubeFeed(category = 'All', seed = '') {
+export async function fetchYouTubeFeed(category = 'All', seed = '', page = 1) {
   try {
     const params = new URLSearchParams();
     if (category && category !== '✨ For You' && category !== 'For You (Algorithm)') {
@@ -605,6 +873,9 @@ export async function fetchYouTubeFeed(category = 'All', seed = '') {
     }
     if (seed) {
       params.set('seed', seed);
+    }
+    if (page && page > 1) {
+      params.set('page', String(page));
     }
     const res = await fetch(`/api/youtube/feed?${params.toString()}`);
     if (!res.ok) return [];
@@ -614,6 +885,62 @@ export async function fetchYouTubeFeed(category = 'All', seed = '') {
     console.warn('Failed to fetch YouTube live feed:', err);
     return [];
   }
+}
+
+// Deterministic/Pseudo-random linear congruential generator for seed-based shuffling
+function createPRNG(seed) {
+  let s = Math.abs(typeof seed === 'number' ? seed : String(seed).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) || 12345;
+  return function nextRandom() {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+
+// Seeded Fisher-Yates shuffle that produces different, random ordering every time seed changes
+export function shuffleArrayWithSeed(array, seed = Date.now()) {
+  if (!Array.isArray(array) || array.length === 0) return [];
+  const copy = [...array];
+  const rng = createPRNG(seed);
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+// Synthetic variation descriptors to make infinite scroll batches realistic and distinct
+const UPLOAD_AGE_VARIANTS = [
+  '2 hours ago', '5 hours ago', '18 hours ago', '1 day ago', '2 days ago', 
+  '4 days ago', '1 week ago', '2 weeks ago', '3 weeks ago', '1 month ago', 
+  '3 months ago', '6 months ago', '1 year ago'
+];
+
+// Generate an endless randomized batch of authentic YouTube videos for infinite browsing
+export function generateInfiniteYouTubeBatch(category = 'All', seed = Date.now(), page = 1, batchSize = 16) {
+  const pool = category && category !== 'All' && category !== '✨ For You'
+    ? DEFAULT_YOUTUBE_VIDEOS.filter(v => v.category === category)
+    : DEFAULT_YOUTUBE_VIDEOS;
+
+  const effectivePool = pool.length > 0 ? pool : DEFAULT_YOUTUBE_VIDEOS;
+  const pageSeed = (typeof seed === 'number' ? seed : 42) + (page * 9973);
+  const shuffled = shuffleArrayWithSeed(effectivePool, pageSeed);
+  const rng = createPRNG(pageSeed);
+
+  const batch = [];
+  for (let i = 0; i < batchSize; i++) {
+    const baseVideo = shuffled[i % shuffled.length];
+    const age = UPLOAD_AGE_VARIANTS[Math.floor(rng() * UPLOAD_AGE_VARIANTS.length)];
+    
+    // Create unique item with deterministic instance key so infinite scroll never conflicts
+    batch.push({
+      ...baseVideo,
+      instanceKey: `${baseVideo.id}-p${page}-i${i}-${Math.floor(rng() * 10000)}`,
+      uploadedAt: baseVideo.uploadedAt || age,
+      isInfiniteBatch: page > 1
+    });
+  }
+
+  return batch;
 }
 
 // Get resilient thumbnail URL that bypasses Linwize block on i.ytimg.com

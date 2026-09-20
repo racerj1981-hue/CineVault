@@ -695,31 +695,74 @@ const feedCache = new Map<string, CachedFeed>();
 app.get("/api/youtube/feed", async (req, res) => {
   const category = (req.query.category as string || "All").trim();
   const querySeed = (req.query.seed as string || req.query.q as string || "").trim();
-  const cacheKey = `${category.toLowerCase()}_${querySeed.toLowerCase()}`;
+  const page = Math.max(1, parseInt((req.query.page as string || "1"), 10) || 1);
+  const cacheKey = `${category.toLowerCase()}_${querySeed.toLowerCase()}_p${page}`;
 
   const cached = feedCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < 10 * 60 * 1000 && cached.videos.length > 0) {
-    return res.json({ ok: true, source: "cache", category, videos: cached.videos });
+    return res.json({ ok: true, source: "cache", category, page, videos: cached.videos });
   }
 
-  // Determine optimal search query for authentic category content
-  let searchQuery = "popular trending videos 2026";
+  // Determine optimal search query for authentic category content with diverse page variations
+  const CATEGORY_QUERY_POOLS: Record<string, string[]> = {
+    "All": [
+      "popular trending viral videos 2026",
+      "curious discoveries engineering science nature",
+      "popular music gaming creativity highlights",
+      "fascinating stories documentaries viral clips",
+      "relaxing 4k ambient lofi focus music"
+    ],
+    "Gaming": [
+      "popular gaming playthroughs highlights 2026",
+      "minecraft epic builds hardcore challenges",
+      "gta 6 elden ring gaming moments clips",
+      "legend of zelda indie gaming showcase"
+    ],
+    "Music & Lofi": [
+      "lofi hip hop chill beats synthwave live radio",
+      "acoustic chill guitar relaxing study beats",
+      "chillhop ambient study jazz vibes",
+      "synthwave cyberpunk retro gaming beats"
+    ],
+    "Music": [
+      "official hit music videos billboard popular",
+      "lofi hip hop chill beats synthwave live radio",
+      "acoustic guitar relaxing music focus"
+    ],
+    "Science & Tech": [
+      "veritasium mark rober science technology engineering discoveries",
+      "space webb telescope physics breakthroughs",
+      "robotics artificial intelligence future technology",
+      "smarter everyday physics fluid dynamics slow motion"
+    ],
+    "Education": [
+      "3blue1brown crashcourse kurzgesagt educational lessons",
+      "ted ed mysterious historical questions",
+      "numberphile math paradoxes philosophy",
+      "pbs space time universe quantum mechanics"
+    ],
+    "Comedy & Classics": [
+      "funny viral classic video clips compilation",
+      "dude perfect trick shots comedy challenges",
+      "wholesome internet moments daily dose"
+    ],
+    "Documentaries": [
+      "4k 8k nature wildlife history documentary full",
+      "deep ocean mariana trench alien creatures documentary",
+      "ancient civilizations cosmos planet earth"
+    ],
+    "⭐ Guaranteed Working": [
+      "open movie blender official creative commons 4k",
+      "sintel big buck bunny tears of steel blender 4k"
+    ]
+  };
+
+  const pool = CATEGORY_QUERY_POOLS[category] || CATEGORY_QUERY_POOLS["All"];
+  const queryIndex = (page - 1) % pool.length;
+  let searchQuery = pool[queryIndex];
+
   if (querySeed) {
-    searchQuery = `${querySeed} videos`;
-  } else if (category === "Gaming") {
-    searchQuery = "popular gaming playthroughs highlights 2026";
-  } else if (category === "Music & Lofi" || category === "Music") {
-    searchQuery = "lofi hip hop chill beats synthwave live radio";
-  } else if (category === "Science & Tech") {
-    searchQuery = "veritasium mark rober science technology engineering discoveries";
-  } else if (category === "Education") {
-    searchQuery = "3blue1brown crashcourse kurzgesagt educational lessons";
-  } else if (category === "Comedy & Classics") {
-    searchQuery = "funny viral classic video clips compilation";
-  } else if (category === "Documentaries") {
-    searchQuery = "4k 8k nature wildlife history documentary full";
-  } else if (category === "⭐ Guaranteed Working") {
-    searchQuery = "open movie blender official creative commons 4k";
+    searchQuery = `${querySeed} ${page > 1 ? `part ${page}` : 'videos'}`;
   }
 
   try {

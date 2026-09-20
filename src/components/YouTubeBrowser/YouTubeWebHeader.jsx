@@ -105,9 +105,10 @@ export const YouTubeWebHeader = ({
 
         <button
           type="button"
+          id="youtube-browser-home-logo-btn"
           onClick={onGoHome}
-          className="flex items-center gap-2.5 group cursor-pointer"
-          title="YouTube Home"
+          className="flex items-center gap-2.5 group cursor-pointer active:scale-95 transition-transform"
+          title="YouTube Home (Tap to refresh YouTube browser feed)"
         >
           {/* Authentic YouTube Logo matching reference image */}
           <YouTubeLogo className="h-5 sm:h-5.5 w-auto group-hover:opacity-95 transition" textColor="#FFFFFF" />

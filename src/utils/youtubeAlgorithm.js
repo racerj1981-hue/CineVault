@@ -8,6 +8,8 @@
 // 6. Maximal Marginal Relevance (MMR) Diversity Re-Ranking
 // 7. Watch Page Up Next Co-visitation and Co-occurrence Ranking
 
+import { shuffleArrayWithSeed } from '../data/youtubeData';
+
 const ALGO_PROFILE_STORAGE_KEY = 'cinevault_yt_algo_profile';
 const INTERACTIONS_STORAGE_KEY = 'cinevault_yt_video_interactions';
 const SUBSCRIPTIONS_STORAGE_KEY = 'cinevault_yt_subscriptions';
@@ -592,7 +594,7 @@ function rankWithMMR(candidates, profile, targetCount = 20, lambda = 0.7) {
 }
 
 // Generate the personalized Algorithmic Home Feed with YouTube-like Shelves & Ranking
-export function getAlgorithmicFeed(allVideos, profile, selectedCategory = 'All') {
+export function getAlgorithmicFeed(allVideos, profile, selectedCategory = 'All', randomSeed = 0) {
   if (!allVideos || allVideos.length === 0) return [];
 
   let candidatePool = [...allVideos];
@@ -606,15 +608,21 @@ export function getAlgorithmicFeed(allVideos, profile, selectedCategory = 'All')
     }
   }
 
-  return rankWithMMR(candidatePool, profile, 40, 0.75);
+  // Shuffle candidates with randomSeed so every refresh randomizes order
+  if (randomSeed) {
+    candidatePool = shuffleArrayWithSeed(candidatePool, randomSeed);
+  }
+
+  return rankWithMMR(candidatePool, profile, Math.max(40, candidatePool.length), 0.75);
 }
 
 // Generate YouTube-style Algorithmic Sections/Shelves for the Home Feed
-export function getAlgorithmicSections(allVideos, profile) {
+export function getAlgorithmicSections(allVideos, profile, randomSeed = 0) {
   if (!allVideos || allVideos.length === 0) return [];
 
   const sections = [];
   const usedVideoIds = new Set();
+  const sourceVideos = randomSeed ? shuffleArrayWithSeed(allVideos, randomSeed) : [...allVideos];
 
   const takeVideos = (candidates, count, allowReuseIfShort = false) => {
     const picked = [];
@@ -637,7 +645,7 @@ export function getAlgorithmicSections(allVideos, profile) {
   };
 
   // 1. "Recommended For You" Shelf (Multi-factor MMR diversified ranking)
-  const ranked = rankWithMMR(allVideos, profile, 20, 0.72);
+  const ranked = rankWithMMR(sourceVideos, profile, 20, 0.72);
   const topRecommended = takeVideos(ranked, 8);
   if (topRecommended.length > 0) {
     const session = detectSessionIntent(profile);
@@ -654,10 +662,10 @@ export function getAlgorithmicSections(allVideos, profile) {
   // 2. "Because you watched / Seed Recommendation" Shelf
   const seed = profile.lastWatchedVideo ||
     profile.watchHistory?.[0] ||
-    (allVideos.length > 0 ? allVideos[0] : null);
+    (sourceVideos.length > 0 ? sourceVideos[0] : null);
 
   if (seed) {
-    const seedCandidates = allVideos.filter(
+    const seedCandidates = sourceVideos.filter(
       (v) => (v.channel === seed.channel || v.category === seed.category) && v.id !== seed.id
     );
     const becauseYouWatched = takeVideos(seedCandidates, 4, true);
@@ -676,7 +684,7 @@ export function getAlgorithmicSections(allVideos, profile) {
   }
 
   // 3. "Trending & Viral Hits" Shelf (Highest view count velocity)
-  const trendingCandidates = [...allVideos].sort((a, b) => {
+  const trendingCandidates = [...sourceVideos].sort((a, b) => {
     return parseViewsScore(b.views) - parseViewsScore(a.views);
   });
   const trendingVideos = takeVideos(trendingCandidates, 4, true);
@@ -698,7 +706,7 @@ export function getAlgorithmicSections(allVideos, profile) {
 
   if (topChannels.length > 0) {
     const favoriteChannel = topChannels[0][0];
-    const channelVideos = allVideos.filter((v) => v.channel === favoriteChannel);
+    const channelVideos = sourceVideos.filter((v) => v.channel === favoriteChannel);
     const channelPicks = takeVideos(channelVideos, 4, true);
     if (channelPicks.length > 0) {
       sections.push({
@@ -711,9 +719,9 @@ export function getAlgorithmicSections(allVideos, profile) {
       });
     }
   } else {
-    const spotlightChannel = allVideos.find((v) => v.channel === 'Veritasium' || v.channel === 'Mark Rober');
+    const spotlightChannel = sourceVideos.find((v) => v.channel === 'Veritasium' || v.channel === 'Mark Rober');
     if (spotlightChannel) {
-      const channelVideos = allVideos.filter((v) => v.channel === spotlightChannel.channel);
+      const channelVideos = sourceVideos.filter((v) => v.channel === spotlightChannel.channel);
       const channelPicks = takeVideos(channelVideos, 4, true);
       if (channelPicks.length > 0) {
         sections.push({

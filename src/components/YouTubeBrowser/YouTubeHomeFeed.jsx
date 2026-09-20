@@ -25,7 +25,14 @@ import {
   Wifi,
   Tag
 } from 'lucide-react';
-import { YOUTUBE_CATEGORIES, getVideoThumbnail, getChannelAvatar, fetchYouTubeFeed } from '../../data/youtubeData';
+import {
+  YOUTUBE_CATEGORIES,
+  getVideoThumbnail,
+  getChannelAvatar,
+  fetchYouTubeFeed,
+  shuffleArrayWithSeed,
+  generateInfiniteYouTubeBatch
+} from '../../data/youtubeData';
 import { YouTubeLogo } from '../YouTubeLogo';
 import { YouTubeVideoCard } from './YouTubeVideoCard';
 import {
@@ -48,7 +55,9 @@ export const YouTubeHomeFeed = ({
   onSearchQuery,
   onOpenVideoProfileModal,
   isOfflineMode = false,
-  onToggleOfflineMode
+  onToggleOfflineMode,
+  feedRandomSeed = 0,
+  onRefreshFeed
 }) => {
   const [feedSearchInput, setFeedSearchInput] = useState('');
   const [algoProfile, setAlgoProfile] = useState(() => loadAlgoProfile());
@@ -56,14 +65,51 @@ export const YouTubeHomeFeed = ({
   const [showAlgoInfo, setShowAlgoInfo] = useState(false);
   const [liveVideos, setLiveVideos] = useState([]);
   const [isLoadingFeed, setIsLoadingFeed] = useState(false);
+
+  // Infinite Scroll & Randomization State
+  const [randomSeed, setRandomSeed] = useState(() => feedRandomSeed || Date.now());
+  const [infiniteVideos, setInfiniteVideos] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
   const loadedCategoriesRef = useRef(new Set());
   const algoProfileRef = useRef(algoProfile);
+  const scrollContainerRef = useRef(null);
+  const bottomSentinelRef = useRef(null);
 
   useEffect(() => {
     algoProfileRef.current = algoProfile;
   }, [algoProfile]);
 
-  // Combined video pool of base/cached videos + live fetched videos
+  // Handle external seed updates (e.g. tapping YouTube logo or browser reload)
+  useEffect(() => {
+    if (feedRandomSeed) {
+      setRandomSeed(feedRandomSeed);
+      setPage(1);
+      setInfiniteVideos([]);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  }, [feedRandomSeed]);
+
+  // Listen for browser-wide YouTube feed refresh events
+  useEffect(() => {
+    const handleGlobalRefresh = (e) => {
+      const nextSeed = e.detail?.seed || Date.now();
+      setRandomSeed(nextSeed);
+      setPage(1);
+      setInfiniteVideos([]);
+      loadCategoryFeed(selectedCategory, true);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    window.addEventListener('cinevault_yt_refresh_feed', handleGlobalRefresh);
+    return () => window.removeEventListener('cinevault_yt_refresh_feed', handleGlobalRefresh);
+  }, [selectedCategory]);
+
+  // Combined video pool of base/cached videos + live fetched videos with seed randomization
   const allAvailableVideos = useMemo(() => {
     const map = new Map();
     const offlineList = loadOfflineVideos();
@@ -92,8 +138,11 @@ export const YouTubeHomeFeed = ({
         map.set(v.id, v);
       }
     });
-    return Array.from(map.values());
-  }, [videos, liveVideos, isOfflineMode]);
+
+    const combined = Array.from(map.values());
+    // Randomize the initial ordering with randomSeed so every refresh is random
+    return shuffleArrayWithSeed(combined, randomSeed);
+  }, [videos, liveVideos, isOfflineMode, randomSeed]);
 
   // Fetch live YouTube feed for the selected category or algorithmic seed
   const loadCategoryFeed = useCallback(async (cat, force = false) => {
@@ -110,7 +159,7 @@ export const YouTubeHomeFeed = ({
         if (topHistory) seed = topHistory;
       }
 
-      const fetched = await fetchYouTubeFeed(categoryKey, seed);
+      const fetched = await fetchYouTubeFeed(categoryKey, seed, 1);
       if (fetched && fetched.length > 0) {
         setLiveVideos((prev) => {
           const map = new Map(prev.map((v) => [v.id, v]));
@@ -129,7 +178,71 @@ export const YouTubeHomeFeed = ({
   // Load feed on mount and whenever category changes
   useEffect(() => {
     loadCategoryFeed(selectedCategory);
+    // Reset infinite scroll on category switch
+    setPage(1);
+    setInfiniteVideos([]);
+    setRandomSeed(Date.now() + Math.floor(Math.random() * 1000));
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [selectedCategory, loadCategoryFeed]);
+
+  // Infinite Scroll Loader: triggers when scrolling near the bottom
+  const handleLoadMore = useCallback(async () => {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+
+    const nextPage = page + 1;
+    try {
+      let freshVideos = [];
+      if (!isOfflineMode) {
+        freshVideos = await fetchYouTubeFeed(selectedCategory, '', nextPage);
+      }
+
+      const existingIds = new Set([
+        ...allAvailableVideos.map((v) => v.id),
+        ...infiniteVideos.map((v) => v.id)
+      ]);
+
+      const validFetched = (freshVideos || []).filter((v) => v && v.id && !existingIds.has(v.id));
+
+      // Generate supplementary randomized batch ensuring infinite continuous videos
+      const generated = generateInfiniteYouTubeBatch(selectedCategory, randomSeed, nextPage, 12);
+      const newBatch = [...validFetched, ...generated];
+
+      setInfiniteVideos((prev) => [...prev, ...newBatch]);
+      setPage(nextPage);
+    } catch (err) {
+      console.warn('Failed to fetch more infinite videos, using local generation:', err);
+      const generated = generateInfiniteYouTubeBatch(selectedCategory, randomSeed, nextPage, 12);
+      setInfiniteVideos((prev) => [...prev, ...generated]);
+      setPage(nextPage);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, page, isOfflineMode, selectedCategory, allAvailableVideos, infiniteVideos, randomSeed]);
+
+  // IntersectionObserver to auto-load more videos when reaching bottom sentinel
+  useEffect(() => {
+    const sentinel = bottomSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoadingMore) {
+          handleLoadMore();
+        }
+      },
+      {
+        root: scrollContainerRef.current,
+        rootMargin: '350px', // Pre-fetch 350px before reaching the bottom
+        threshold: 0.1
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [handleLoadMore, isLoadingMore]);
 
   // Reload profile when algorithmic updates or storage changes happen
   useEffect(() => {
@@ -172,25 +285,33 @@ export const YouTubeHomeFeed = ({
   // Session intent & top semantic keywords
   const sessionInfo = useMemo(() => detectSessionIntent(algoProfile), [algoProfile]);
 
-  const topKeywords = useMemo(() => {
-    return Object.entries(algoProfile.keywordAffinities || {})
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([kw]) => kw);
-  }, [algoProfile]);
-
-  // Algorithmic Shelves
+  // Algorithmic Shelves with randomization seed
   const algorithmicSections = useMemo(() => {
-    return getAlgorithmicSections(allAvailableVideos, algoProfile);
-  }, [allAvailableVideos, algoProfile]);
+    return getAlgorithmicSections(allAvailableVideos, algoProfile, randomSeed);
+  }, [allAvailableVideos, algoProfile, randomSeed]);
 
-  // Filtered / Ranked Videos for Grid Mode
-  const filteredVideos = useMemo(() => {
+  // Filtered / Ranked Videos for Grid Mode with randomization seed
+  const baseRankedVideos = useMemo(() => {
     if (selectedCategory === 'For You (Algorithm)' || selectedCategory === '✨ For You') {
-      return getAlgorithmicFeed(allAvailableVideos, algoProfile, 'All');
+      return getAlgorithmicFeed(allAvailableVideos, algoProfile, 'All', randomSeed);
     }
-    return getAlgorithmicFeed(allAvailableVideos, algoProfile, selectedCategory);
-  }, [allAvailableVideos, algoProfile, selectedCategory]);
+    return getAlgorithmicFeed(allAvailableVideos, algoProfile, selectedCategory, randomSeed);
+  }, [allAvailableVideos, algoProfile, selectedCategory, randomSeed]);
+
+  // Combined Grid Videos (Base + Infinite Batches)
+  const displayGridVideos = useMemo(() => {
+    return [...baseRankedVideos, ...infiniteVideos];
+  }, [baseRankedVideos, infiniteVideos]);
+
+  // For Shelves view: videos not already in the shelves + infinite videos for endless scrolling
+  const moreVideosForShelves = useMemo(() => {
+    const usedInShelves = new Set();
+    algorithmicSections.forEach((s) => {
+      s.videos.forEach((v) => usedInShelves.add(v.id));
+    });
+    const unusedBase = baseRankedVideos.filter((v) => !usedInShelves.has(v.id));
+    return [...unusedBase, ...infiniteVideos];
+  }, [algorithmicSections, baseRankedVideos, infiniteVideos]);
 
   const allCategories = useMemo(() => {
     return ['✨ For You', ...YOUTUBE_CATEGORIES];
@@ -198,8 +319,27 @@ export const YouTubeHomeFeed = ({
 
   const isForYouActive = selectedCategory === 'For You (Algorithm)' || selectedCategory === '✨ For You';
 
+  // Manual refresh click handler
+  const handleManualRefresh = () => {
+    const nextSeed = Date.now() + Math.floor(Math.random() * 10000);
+    setRandomSeed(nextSeed);
+    setPage(1);
+    setInfiniteVideos([]);
+    loadCategoryFeed(selectedCategory, true);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    if (onRefreshFeed) {
+      onRefreshFeed(nextSeed);
+    }
+  };
+
   return (
-    <div className="flex-1 p-4 sm:p-6 overflow-y-auto no-scrollbar bg-zinc-950">
+    <div
+      id="youtube-feed-scroll-container"
+      ref={scrollContainerRef}
+      className="flex-1 p-4 sm:p-6 overflow-y-auto no-scrollbar bg-zinc-950"
+    >
       {/* Offline Mode Active Banner */}
       {isOfflineMode && (
         <div className="mb-4 p-3.5 rounded-2xl bg-emerald-950/50 border border-emerald-500/40 flex items-center justify-between gap-3 shadow-lg">
@@ -331,13 +471,13 @@ export const YouTubeHomeFeed = ({
           })}
         </div>
 
-        {/* Refresh feed button */}
+        {/* Refresh feed button (Randomizes videos every time) */}
         <button
           type="button"
-          onClick={() => loadCategoryFeed(selectedCategory, true)}
+          onClick={handleManualRefresh}
           disabled={isLoadingFeed}
           className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white transition cursor-pointer shrink-0 disabled:opacity-50"
-          title="Fetch latest YouTube uploads"
+          title="Refresh YouTube browser feed (Randomize videos)"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoadingFeed ? 'animate-spin text-amber-400' : ''}`} />
         </button>
@@ -345,7 +485,7 @@ export const YouTubeHomeFeed = ({
 
       {/* Main Content Area */}
       {isForYouActive && viewMode === 'shelves' && algorithmicSections.length > 0 ? (
-        /* Algorithmic Shelves Layout */
+        /* Algorithmic Shelves Layout with Infinite Scroll Stream Below */
         <div className="space-y-8">
           {algorithmicSections.map((section) => {
             const SectionIcon =
@@ -381,9 +521,9 @@ export const YouTubeHomeFeed = ({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-                  {section.videos.map((video) => (
+                  {section.videos.map((video, idx) => (
                     <YouTubeVideoCard
-                      key={`${section.id}-${video.id}`}
+                      key={video.instanceKey || `${section.id}-${video.id}-${idx}`}
                       video={video}
                       onSelectVideo={onSelectVideo}
                       onOpenVideoInNewTab={onOpenVideoInNewTab}
@@ -395,13 +535,45 @@ export const YouTubeHomeFeed = ({
               </section>
             );
           })}
+
+          {/* Endless Exploration Shelf - Connects Infinite Scroll in Shelves View */}
+          {moreVideosForShelves.length > 0 && (
+            <section className="space-y-3.5 pt-4 border-t border-zinc-850">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-red-500">
+                    <Flame className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white leading-tight">Explore More Videos</h3>
+                    <p className="text-xs text-zinc-400 leading-tight mt-0.5">
+                      Endless personalized recommendations • Continuous scroll
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+                {moreVideosForShelves.map((video, idx) => (
+                  <YouTubeVideoCard
+                    key={video.instanceKey || `${video.id}-shelf-more-${idx}`}
+                    video={video}
+                    onSelectVideo={onSelectVideo}
+                    onOpenVideoInNewTab={onOpenVideoInNewTab}
+                    onAddToQueue={onAddToQueue}
+                    onOpenVideoProfileModal={onOpenVideoProfileModal}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       ) : (
-        /* Continuous Ranked Grid Layout */
+        /* Continuous Ranked Grid Layout with Infinite Scroll */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-          {filteredVideos.map((video) => (
+          {displayGridVideos.map((video, idx) => (
             <YouTubeVideoCard
-              key={video.id}
+              key={video.instanceKey || `${video.id}-grid-${idx}`}
               video={video}
               onSelectVideo={onSelectVideo}
               onOpenVideoInNewTab={onOpenVideoInNewTab}
@@ -411,6 +583,24 @@ export const YouTubeHomeFeed = ({
           ))}
         </div>
       )}
+
+      {/* Bottom Sentinel for Seamless Infinite Scrolling */}
+      <div
+        ref={bottomSentinelRef}
+        className="w-full py-8 mt-4 flex flex-col items-center justify-center gap-2 text-zinc-400"
+      >
+        {isLoadingMore ? (
+          <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 shadow-md">
+            <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+            <span className="text-xs font-medium text-zinc-300">Loading more videos...</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-[11px] text-zinc-600">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+            <span>Scroll down for infinite recommendations</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
