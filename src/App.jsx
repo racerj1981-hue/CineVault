@@ -32,7 +32,7 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           // Strictly remove any lingering games
           const onlyMovies = parsed.filter((i) => i.type !== 'game');
-          // Merge with default items to ensure latest verified stream URLs
+          // Merge with default items to ensure latest verified stream URLs and valid thumbnails
           const merged = onlyMovies.map((item) => {
             const def = DEFAULT_MEDIA_ITEMS.find((d) => d.id === item.id);
             if (def) {
@@ -40,6 +40,9 @@ export default function App() {
                 ...item,
                 iframeUrl: def.iframeUrl,
                 iframe: def.iframe,
+                thumbnail: def.thumbnail,
+                streamUrl: def.streamUrl,
+                archiveId: def.archiveId,
               };
             }
             return item;

@@ -13,6 +13,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { isDirectMediaUrl } from '../utils/streamFetch';
+import { isStaticHost } from '../utils/assetHelper';
 
 export const PlayerView = ({
   item,
@@ -92,8 +93,8 @@ export const PlayerView = ({
     ? `/api/proxy/stream?url=${encodeURIComponent(rawCandidate)}`
     : (item?.archiveId ? `/api/movie/stream/${encodeURIComponent(item.archiveId)}` : '');
 
-  // Streaming node state: default to 'relay' for guaranteed Linwize school filter bypass
-  const [streamNode, setStreamNode] = useState('relay'); // 'relay' | 'direct' | 'cors'
+  // Streaming node state: default to 'direct' on static hosts (GitHub Pages) or 'relay' on full-stack
+  const [streamNode, setStreamNode] = useState(() => (isStaticHost() ? 'direct' : 'relay')); // 'relay' | 'direct' | 'cors'
 
   const activeStreamUrl = (streamNode === 'relay' && linwizeRelayUrl)
     ? linwizeRelayUrl
@@ -417,6 +418,11 @@ export const PlayerView = ({
                   onCanPlay={() => setIsVideoLoading(false)}
                   onPlaying={() => setIsVideoLoading(false)}
                   onError={() => {
+                    if (streamNode === 'relay' && rawCandidate) {
+                      console.warn('Relay stream unavailable, auto-switching to direct stream');
+                      setStreamNode('direct');
+                      return;
+                    }
                     setIsVideoLoading(false);
                     setStreamError(true);
                   }}

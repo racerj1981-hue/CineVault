@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, Film, Star, Clock } from 'lucide-react';
+import { resolveMediaThumbnail, isStaticHost } from '../utils/assetHelper';
 
 export const MediaCard = ({
   item,
@@ -9,6 +10,50 @@ export const MediaCard = ({
 }) => {
   const [imgError, setImgError] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [thumbSrc, setThumbSrc] = useState(() => resolveMediaThumbnail(item));
+  const [fallbackStage, setFallbackStage] = useState(0);
+
+  useEffect(() => {
+    setThumbSrc(resolveMediaThumbnail(item));
+    setImgLoaded(false);
+    setImgError(false);
+    setFallbackStage(0);
+  }, [item?.id, item?.thumbnail]);
+
+  const handleImageError = () => {
+    if (fallbackStage === 0) {
+      setFallbackStage(1);
+      // Fallback 1: Archive.org official poster for archive items
+      if (item.archiveId) {
+        setThumbSrc(`https://archive.org/services/img/${encodeURIComponent(item.archiveId)}`);
+        return;
+      }
+      // If YouTube 11-char ID
+      if (item.id && /^[a-zA-Z0-9_-]{11}$/.test(item.id)) {
+        setThumbSrc(
+          isStaticHost()
+            ? `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`
+            : `/api/youtube/thumbnail?id=${item.id}`
+        );
+        return;
+      }
+      // Fallback to Unsplash
+      setThumbSrc('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80');
+      return;
+    }
+
+    if (fallbackStage === 1) {
+      setFallbackStage(2);
+      if (item.id && /^[a-zA-Z0-9_-]{11}$/.test(item.id)) {
+        setThumbSrc(`https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`);
+        return;
+      }
+      setThumbSrc('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80');
+      return;
+    }
+
+    setImgError(true);
+  };
 
   return (
     <div
@@ -27,21 +72,13 @@ export const MediaCard = ({
           </div>
         )}
 
-        {!imgError ? (
+        {!imgError && thumbSrc ? (
           <img
-            src={item.thumbnail}
+            src={thumbSrc}
             alt={item.title}
             onLoad={() => setImgLoaded(true)}
-            onError={() => {
-              if (item.id && !item.thumbnail?.includes('/api/youtube/thumbnail')) {
-                // Try unblocked backend proxy thumbnail
-                item.thumbnail = `/api/youtube/thumbnail?id=${item.id}`;
-                setImgLoaded(true);
-              } else {
-                setImgError(true);
-              }
-            }}
-            referrerPolicy="strict-origin-when-cross-origin"
+            onError={handleImageError}
+            referrerPolicy="no-referrer"
             className="w-full h-full object-cover object-center group-hover:scale-105 transition-all duration-500 ease-out select-none pointer-events-none opacity-100"
             loading="lazy"
           />

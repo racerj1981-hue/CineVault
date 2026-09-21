@@ -7,7 +7,7 @@ export const CLOAK_PRESETS = [
     id: 'default',
     name: 'Default (Cinema)',
     title: 'CineVault',
-    icon: '/favicon.svg'
+    icon: '/favicon.png'
   },
   {
     id: 'classroom',

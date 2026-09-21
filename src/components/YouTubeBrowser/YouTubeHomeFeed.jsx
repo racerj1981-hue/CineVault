@@ -139,7 +139,7 @@ export const YouTubeHomeFeed = ({
       }
     });
 
-    const combined = Array.from(map.values());
+    const combined = Array.from(map.values()).filter((v) => v && v.id && v.available !== false);
     // Randomize the initial ordering with randomSeed so every refresh is random
     return shuffleArrayWithSeed(combined, randomSeed);
   }, [videos, liveVideos, isOfflineMode, randomSeed]);
@@ -161,9 +161,10 @@ export const YouTubeHomeFeed = ({
 
       const fetched = await fetchYouTubeFeed(categoryKey, seed, 1);
       if (fetched && fetched.length > 0) {
+        const liveFiltered = fetched.filter((v) => v && v.id && v.available !== false);
         setLiveVideos((prev) => {
           const map = new Map(prev.map((v) => [v.id, v]));
-          fetched.forEach((v) => map.set(v.id, v));
+          liveFiltered.forEach((v) => map.set(v.id, v));
           return Array.from(map.values());
         });
         loadedCategoriesRef.current.add(categoryKey);
@@ -204,7 +205,9 @@ export const YouTubeHomeFeed = ({
         ...infiniteVideos.map((v) => v.id)
       ]);
 
-      const validFetched = (freshVideos || []).filter((v) => v && v.id && !existingIds.has(v.id));
+      const validFetched = (freshVideos || []).filter(
+        (v) => v && v.id && v.available !== false && !existingIds.has(v.id)
+      );
 
       // Generate supplementary randomized batch ensuring infinite continuous videos
       const generated = generateInfiniteYouTubeBatch(selectedCategory, randomSeed, nextPage, 12);

@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CineVault</title>
     <script>
+      // Normalize GitHub Pages trailing slash so relative paths (e.g. ./manifest.json, ./posters/...) resolve within repo scope
+      if (location.hostname.includes('github.io')) {
+        var pathSegments = location.pathname.split('/').filter(Boolean);
+        if (pathSegments.length === 1 && !location.pathname.endsWith('/')) {
+          location.replace(location.pathname + '/' + location.search + location.hash);
+        }
+      }
       // Purge any registered service workers and caches to prevent duplicate React runtime instances
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -21,12 +28,13 @@
         });
       }
     </script>
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" id="favicon-link" />
+    <link rel="icon" type="image/png" href="./favicon.png" id="favicon-link" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="./pwa-192x192.png" />
     <link rel="icon" type="image/png" sizes="128x128" href="./icon-128.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="./icon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="./icon-16.png" />
-    <link rel="shortcut icon" href="./favicon.svg" />
+    <link rel="shortcut icon" href="./favicon.png" />
     <link rel="manifest" href="./manifest.json" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <meta name="theme-color" content="#09090b" />

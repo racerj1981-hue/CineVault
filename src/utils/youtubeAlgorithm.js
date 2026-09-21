@@ -597,7 +597,7 @@ function rankWithMMR(candidates, profile, targetCount = 20, lambda = 0.7) {
 export function getAlgorithmicFeed(allVideos, profile, selectedCategory = 'All', randomSeed = 0) {
   if (!allVideos || allVideos.length === 0) return [];
 
-  let candidatePool = [...allVideos];
+  let candidatePool = allVideos.filter((v) => v && v.id && v.available !== false);
   if (selectedCategory && selectedCategory !== 'All' && selectedCategory !== 'For You (Algorithm)') {
     if (selectedCategory === '⭐ Guaranteed Working') {
       candidatePool = candidatePool.filter((v) => v.isGuaranteed);
@@ -622,7 +622,8 @@ export function getAlgorithmicSections(allVideos, profile, randomSeed = 0) {
 
   const sections = [];
   const usedVideoIds = new Set();
-  const sourceVideos = randomSeed ? shuffleArrayWithSeed(allVideos, randomSeed) : [...allVideos];
+  const validVideos = allVideos.filter((v) => v && v.id && v.available !== false);
+  const sourceVideos = randomSeed ? shuffleArrayWithSeed(validVideos, randomSeed) : [...validVideos];
 
   const takeVideos = (candidates, count, allowReuseIfShort = false) => {
     const picked = [];
@@ -760,7 +761,7 @@ export function getAlgorithmicSections(allVideos, profile, randomSeed = 0) {
 export function getUpNextRecommendations(currentVideo, allVideos, profile, filter = 'all') {
   if (!allVideos || allVideos.length === 0) return [];
 
-  const otherVideos = allVideos.filter((v) => v.id !== currentVideo?.id);
+  const otherVideos = allVideos.filter((v) => v && v.id && v.available !== false && v.id !== currentVideo?.id);
 
   let pool = otherVideos;
   if (filter === 'channel' && currentVideo?.channel) {

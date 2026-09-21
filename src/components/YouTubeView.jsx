@@ -15,7 +15,8 @@ import {
   Clock,
   Play,
   ListMusic,
-  ExternalLink
+  ExternalLink,
+  AlertCircle
 } from 'lucide-react';
 import {
   YOUTUBE_PROXY_NODES,
@@ -25,7 +26,8 @@ import {
   openAboutBlankCloak,
   fetchYouTubeSearch,
   getVideoThumbnail,
-  fetchYouTubeFeed
+  fetchYouTubeFeed,
+  checkYouTubeVideoAvailability
 } from '../data/youtubeData';
 import {
   recordSearchEvent,
@@ -68,15 +70,18 @@ export const YouTubeView = ({
         const parsed = JSON.parse(saved);
         const validCustom = parsed.filter(
           (v) =>
-            !['Y3k30B2zD5E', '31U3G1vJ_6E', '7n9Uj4BxS68', 'r_pZlI19V4I', 'V1bFr2KGq1g', 'd9b6l92q_J0', 'kJQP7kiw5Fk'].includes(v.id)
+            v &&
+            v.id &&
+            v.available !== false &&
+            !['Y3k30B2zD5E', '31U3G1vJ_6E', '7n9Uj4BxS68', 'r_pZlI19V4I', 'V1bFr2KGq1g', 'd9b6l92q_J0', 'kJQP7kiw5Fk', '5qap5aO4i9A', 'L_LUpnjgPso'].includes(v.id)
         );
         const customOnly = validCustom.filter((p) => !DEFAULT_YOUTUBE_VIDEOS.some((d) => d.id === p.id));
-        return [...DEFAULT_YOUTUBE_VIDEOS, ...customOnly];
+        return [...DEFAULT_YOUTUBE_VIDEOS, ...customOnly].filter((v) => v && v.available !== false);
       }
     } catch {
       // fallback
     }
-    return DEFAULT_YOUTUBE_VIDEOS;
+    return DEFAULT_YOUTUBE_VIDEOS.filter((v) => v && v.available !== false);
   });
 
   // Up Next Queue
@@ -122,6 +127,7 @@ export const YouTubeView = ({
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
   const [diagnosticsData, setDiagnosticsData] = useState(null);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [unavailableNotice, setUnavailableNotice] = useState(null);
 
   // Sidebar Collapsed
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -207,10 +213,11 @@ export const YouTubeView = ({
       try {
         const live = await fetchYouTubeFeed('All');
         if (mounted && live && live.length > 0) {
+          const liveFiltered = live.filter((v) => v && v.id && v.available !== false);
           setVideos((prev) => {
             const map = new Map(prev.map((v) => [v.id, v]));
-            live.forEach((v) => map.set(v.id, v));
-            return Array.from(map.values());
+            liveFiltered.forEach((v) => map.set(v.id, v));
+            return Array.from(map.values()).filter((v) => v && v.id && v.available !== false);
           });
         }
       } catch (err) {
@@ -282,6 +289,19 @@ export const YouTubeView = ({
     // 2. Check if user typed or pasted a YouTube video URL or ID
     const extractedId = extractYouTubeId(clean);
     if (extractedId) {
+      updateTab(activeTab.id, { isLoading: true });
+      const isAvailable = await checkYouTubeVideoAvailability(extractedId);
+
+      if (!isAvailable) {
+        updateTab(activeTab.id, { isLoading: false });
+        setUnavailableNotice({
+          id: extractedId,
+          message: `Video (${extractedId}) is unavailable, private, or removed. It was not added to the browser.`
+        });
+        setTimeout(() => setUnavailableNotice(null), 5000);
+        return;
+      }
+
       const existing = videos.find((v) => v.id === extractedId);
       const videoObj = existing || {
         id: extractedId,
@@ -326,19 +346,21 @@ export const YouTubeView = ({
     } catch {}
     try {
       const results = await fetchYouTubeSearch(query);
+      const filteredResults = (results || []).filter((v) => v && v.id && v.available !== false);
       navigateTabTo(activeTab.id, {
         url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
         title: `${query} - YouTube Search`,
         activeVideo: null,
         searchQuery: query,
-        searchResults: results,
+        searchResults: filteredResults,
         isLoading: false
       });
     } catch {
       // fallback search with local catalog
       const localMatches = videos.filter((v) =>
-        v.title.toLowerCase().includes(query.toLowerCase()) ||
-        v.channel.toLowerCase().includes(query.toLowerCase())
+        v.available !== false &&
+        (v.title.toLowerCase().includes(query.toLowerCase()) ||
+        v.channel.toLowerCase().includes(query.toLowerCase()))
       );
       navigateTabTo(activeTab.id, {
         url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
@@ -527,6 +549,17 @@ export const YouTubeView = ({
 
   // Select Video to watch
   const handleSelectVideo = (video, inNewTab = false) => {
+    if (!video || !video.id) return;
+
+    if (video.available === false) {
+      setUnavailableNotice({
+        id: video.id,
+        message: `Video (${video.title || video.id}) is unavailable or private and cannot be added.`
+      });
+      setTimeout(() => setUnavailableNotice(null), 5000);
+      return;
+    }
+
     if (inNewTab) {
       handleNewTab(`https://www.youtube.com/watch?v=${video.id}`, video);
       return;
@@ -571,6 +604,7 @@ export const YouTubeView = ({
   // Add to Up Next queue
   const handleAddToQueue = (video, e) => {
     e?.stopPropagation();
+    if (!video || !video.id || video.available === false) return;
     try {
       const profile = loadAlgoProfile();
       recordInteractionEvent(video.id, video, 'queue', profile);
@@ -689,7 +723,28 @@ export const YouTubeView = ({
       />
 
       {/* 2. In-Browser Web Application Window */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        {/* Unavailable Video Warning Banner */}
+        {unavailableNotice && (
+          <div
+            id="youtube-unavailable-banner"
+            className="w-full bg-red-950/90 border-b border-red-800/80 px-4 py-2.5 flex items-center justify-between text-xs text-red-200 z-40 backdrop-blur-md animate-in slide-in-from-top duration-300"
+          >
+            <div className="flex items-center gap-2 max-w-[90%]">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <span className="font-semibold text-white">Video Unavailable:</span>
+              <span className="truncate">{unavailableNotice.message}</span>
+            </div>
+            <button
+              onClick={() => setUnavailableNotice(null)}
+              className="text-red-400 hover:text-white p-1 rounded-md transition cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Dedicated YouTube Search Bar inside the browser */}
         <YouTubeWebHeader
           onSearch={(q) => handleNavigateUrl(q)}

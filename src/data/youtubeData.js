@@ -1,5 +1,6 @@
 // Curated Unblocked YouTube Collection with 100% Guaranteed Playback & Multi-Layer Failover
 // Contains verified high-availability videos, clean NoCookie player, and failproof native HTML5 stream fallback.
+import { resolveAssetUrl, isStaticHost } from '../utils/assetHelper';
 
 export const YOUTUBE_PROXY_NODES = [
   {
@@ -370,14 +371,14 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     description: 'The uplifting and emotional hit by Marshmello and Bastille celebrating companionship and resilience.'
   },
   {
-    id: 'b6JzI7T5eio',
+    id: 'QdBZY2fkU-0',
     title: 'Grand Theft Auto VI Trailer 1 (Official 4K)',
     channel: 'Rockstar Games',
     channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_n2V7mK0pT1g_x8=s160-c-k-c0x00ffffff-no-rj',
     category: 'Gaming',
     views: '230M views',
     duration: '1:31',
-    thumbnail: 'https://i.ytimg.com/vi/b6JzI7T5eio/hqdefault.jpg',
+    thumbnail: 'https://i.ytimg.com/vi/QdBZY2fkU-0/hqdefault.jpg',
     description: 'Welcome to Leonida and Vice City. The record-breaking premiere trailer for GTA VI in ultra 4K.'
   },
   {
@@ -403,37 +404,37 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     description: 'Surviving 100 days of ultra-hardcore Minecraft without dying once, building an impregnable fortress.'
   },
   {
-    id: 'wBHS68jXoT8',
-    title: 'DanTDM - I Played Minecraft In VR For The First Time',
-    channel: 'DanTDM',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m5K0q=s160-c-k-c0x00ffffff-no-rj',
+    id: '1HCrV7mFWr8',
+    title: 'Minecraft: Wilderness Bound – Official World Trailer',
+    channel: 'Minecraft',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nzY8qK1p=s160-c-k-c0x00ffffff-no-rj',
     category: 'Gaming',
     views: '22M views',
-    duration: '18:45',
-    thumbnail: 'https://i.ytimg.com/vi/wBHS68jXoT8/hqdefault.jpg',
-    description: 'DanTDM puts on a VR headset and faces terrifying creepers and heights up-close in virtual reality.'
+    duration: '2:45',
+    thumbnail: 'https://i.ytimg.com/vi/1HCrV7mFWr8/hqdefault.jpg',
+    description: 'Explore the infinite wilderness, survival structures, and scenic biomes in official high-definition footage.'
   },
   {
-    id: 'F9FqBxFq8_I',
-    title: 'WARNING: SCARIEST GAME IN YEARS | Five Nights at Freddy\'s - Part 1',
-    channel: 'Markiplier',
+    id: 'cqYefPrvEhI',
+    title: 'The Lore of Elden Ring\'s Cosmic Sorcerers',
+    channel: 'VaatiVidya',
     channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_l9Q2q=s160-c-k-c0x00ffffff-no-rj',
     category: 'Gaming',
-    views: '112M views',
-    duration: '17:34',
-    thumbnail: 'https://i.ytimg.com/vi/F9FqBxFq8_I/hqdefault.jpg',
-    description: 'Markiplier plays the legendary horror game that spawned a gaming phenomenon. Where it all began.'
+    views: '5.2M views',
+    duration: '34:20',
+    thumbnail: 'https://i.ytimg.com/vi/cqYefPrvEhI/hqdefault.jpg',
+    description: 'Deep dive lore exploration into the primeval current, Glintstone sorceries, and the Academy of Raya Lucaria.'
   },
   {
-    id: 't1U-g4S_X_A',
-    title: 'Glitter Bomb 5.0 vs. Porch Pirates (Official Finale)',
+    id: 'xoxhDk-hwuo',
+    title: 'Glitter Bomb 1.0 vs Porch Pirates (The Original)',
     channel: 'Mark Rober',
     channelAvatar: 'https://yt3.ggpht.com/ytc/AIdro_ksXY2REjZ6gYKSgnWT5jC_zT9mX900vyFtVinR8KbHww=s176-c-k-c0x00ffffff-no-rj',
     category: 'Science & Tech',
-    views: '85M views',
-    duration: '28:44',
-    thumbnail: 'https://i.ytimg.com/vi/t1U-g4S_X_A/hqdefault.jpg',
-    description: 'Mark Rober creates the most advanced engineering bait box ever with car horns, micro-drone tracking, and biodegradable glitter.'
+    views: '92M views',
+    duration: '11:22',
+    thumbnail: 'https://i.ytimg.com/vi/xoxhDk-hwuo/hqdefault.jpg',
+    description: 'Ex-NASA engineer Mark Rober builds custom sensor-rigged bait packages with 360-degree cameras and fart spray.'
   },
   {
     id: 'L45Q1_psDqk',
@@ -447,37 +448,37 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     description: 'A scientific simulation exploring what would happen if humanity stacked all 15,000 nuclear weapons into one spot.'
   },
   {
-    id: 'AirpZq0J2uY',
-    title: 'Smartphone Awards 2024: Best Camera, Battery & Design',
-    channel: 'MKBHD',
-    channelAvatar: 'https://yt3.googleusercontent.com/qu4TmIaYUlS41-dJ9gZ7DUR3nilvmB5_11i6OKSdvNnBNiyOusZP1bMN6ICnuxtjFBb6ioKgRQ=s160-c-k-c0x00ffffff-no-rj',
+    id: 'XKSjCOKDtpk',
+    title: 'Do We Know How Magnets Work Yet?',
+    channel: 'Veritasium',
+    channelAvatar: 'https://yt3.ggpht.com/7vCbvtCqtjQ3YLgsJt7Y952MQV1sBvhllSCSxHP8_sVZdcPCBrITfhkN2RdyCuwPnsByq-1GoA=s176-c-k-c0x00ffffff-no-rj',
     category: 'Science & Tech',
-    views: '8.9M views',
-    duration: '23:18',
-    thumbnail: 'https://i.ytimg.com/vi/AirpZq0J2uY/hqdefault.jpg',
-    description: 'Marques Brownlee hands out the official blind test trophies for the year’s finest technology devices.'
+    views: '12M views',
+    duration: '15:40',
+    thumbnail: 'https://i.ytimg.com/vi/XKSjCOKDtpk/hqdefault.jpg',
+    description: 'Veritasium dives deep into quantum spin, special relativity, and magnetic domains to explain magnetism.'
   },
   {
-    id: 'q3A6jUf_RjE',
-    title: 'How Rockets Work in Ultra Slow Motion (4K Phantom Camera)',
-    channel: 'SmarterEveryDay',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_l59Ewmp0DHZBRWbY9dVqjd2_mWwvrn8ad0bJfmdbMRYcA=s160-c-k-c0x00ffffff-no-rj',
+    id: 'NIk_0AW5hFU',
+    title: 'There Is Something Faster Than Light',
+    channel: 'Veritasium',
+    channelAvatar: 'https://yt3.ggpht.com/7vCbvtCqtjQ3YLgsJt7Y952MQV1sBvhllSCSxHP8_sVZdcPCBrITfhkN2RdyCuwPnsByq-1GoA=s176-c-k-c0x00ffffff-no-rj',
     category: 'Science & Tech',
-    views: '19M views',
-    duration: '16:42',
-    thumbnail: 'https://i.ytimg.com/vi/q3A6jUf_RjE/hqdefault.jpg',
-    description: 'Destin captures rocket fuel ignition and fluid dynamics at 20,000 frames per second.'
+    views: '21M views',
+    duration: '18:15',
+    thumbnail: 'https://i.ytimg.com/vi/NIk_0AW5hFU/hqdefault.jpg',
+    description: 'Can anything travel faster than the speed of light in vacuum? Testing quantum entanglement and phase velocity.'
   },
   {
-    id: 'fn3K35Ut64c',
-    title: 'Do You Love Me? Atlas & Spot Robot Dance Compilation',
-    channel: 'Boston Dynamics',
+    id: 'uD4izuDMUQA',
+    title: 'TIMELAPSE OF THE FUTURE: A Journey to the End of Time (4K)',
+    channel: 'melodysheep',
     channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m9P2q=s160-c-k-c0x00ffffff-no-rj',
     category: 'Science & Tech',
-    views: '40M views',
-    duration: '2:53',
-    thumbnail: 'https://i.ytimg.com/vi/fn3K35Ut64c/hqdefault.jpg',
-    description: 'Boston Dynamics whole robotic crew celebrates breakthroughs in dynamic balance and coordination.'
+    views: '105M views',
+    duration: '29:21',
+    thumbnail: 'https://i.ytimg.com/vi/uD4izuDMUQA/hqdefault.jpg',
+    description: 'An epic journey to the end of time, traveling through black holes, decaying stars, and the final state of the universe.'
   },
   {
     id: 'aircAruvnKk',
@@ -502,58 +503,58 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     description: 'How can a full hotel with infinitely many rooms accommodate infinitely more guests? David Hilbert’s paradox.'
   },
   {
-    id: 'wTj1rGsmYps',
-    title: 'The Golden Ratio & Fibonacci Mystery in Nature',
-    channel: 'Numberphile',
+    id: 'OmJ-4B-mS-Y',
+    title: 'The Map of Mathematics',
+    channel: 'Domain of Science',
     channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nFzZFPLxPZRHcE3SSwzdrbuWqfoWYwLAu0_2iO6blQYAU=s176-c-k-c0x00ffffff-no-rj',
     category: 'Education',
-    views: '11M views',
-    duration: '14:38',
-    thumbnail: 'https://i.ytimg.com/vi/wTj1rGsmYps/hqdefault.jpg',
-    description: 'Mathematicians reveal why the golden spiral appears throughout sunflower seeds, pinecones, and galaxies.'
+    views: '19M views',
+    duration: '11:06',
+    thumbnail: 'https://i.ytimg.com/vi/OmJ-4B-mS-Y/hqdefault.jpg',
+    description: 'Every single branch of pure and applied mathematics mapped out in one visually coherent diagram.'
   },
   {
-    id: 'G-Z_Uv5P-7g',
-    title: 'Dude Perfect - Real Life Trick Shots 2',
-    channel: 'Dude Perfect',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m9P2qX0p=s160-c-k-c0x00ffffff-no-rj',
+    id: 'p7HKvqRI_Bo',
+    title: 'How does the stock market work? - Oliver Elfenbaum',
+    channel: 'TED-Ed',
+    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_koIFcCOrvh0KThLNOiazAIDu6hcs8bjkGNwe1f6A_OYm8=s160-c-k-c0x00ffffff-no-rj',
+    category: 'Education',
+    views: '13M views',
+    duration: '4:30',
+    thumbnail: 'https://i.ytimg.com/vi/p7HKvqRI_Bo/hqdefault.jpg',
+    description: 'A clear animated breakdown of how stock exchanges match buyers and sellers across the global economy.'
+  },
+  {
+    id: '0e3GPea1Tyg',
+    title: '$456,000 Squid Game In Real Life!',
+    channel: 'MrBeast',
+    channelAvatar: 'https://yt3.ggpht.com/nxYrc_1_2f77DoBadyxMTmv7ZpRZapHR5jbuYe7PlPd5cIRJxtNNEYyOC0ZsxaDyJJzXrnJiuDE=s176-c-k-c0x00ffffff-no-rj',
     category: 'Comedy & Classics',
-    views: '95M views',
-    duration: '8:42',
-    thumbnail: 'https://i.ytimg.com/vi/G-Z_Uv5P-7g/hqdefault.jpg',
-    description: 'Insane everyday trick shots with Frisbees, basketballs, ping pong balls, and lawn chairs.'
+    views: '580M views',
+    duration: '25:41',
+    thumbnail: 'https://i.ytimg.com/vi/0e3GPea1Tyg/hqdefault.jpg',
+    description: '456 real people compete in custom recreation sets for a massive $456,000 cash prize.'
   },
   {
-    id: 'm8e-CwtVcyU',
-    title: 'Daily Dose Of Internet - The Best Moments Of The Year',
-    channel: 'Daily Dose Of Internet',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m9P2q=s160-c-k-c0x00ffffff-no-rj',
-    category: 'Comedy & Classics',
-    views: '28M views',
-    duration: '12:15',
-    thumbnail: 'https://i.ytimg.com/vi/m8e-CwtVcyU/hqdefault.jpg',
-    description: 'Wholesome, awe-inspiring, and mind-boggling viral clips curated from across the entire globe.'
-  },
-  {
-    id: 'e_z7rO_zK0I',
-    title: 'BBC Earth - Planet Earth II: Cities & Wildlife 4K',
-    channel: 'BBC',
+    id: 'r9PeYPHdpNo',
+    title: 'Our Planet | Coastal Seas | FULL EPISODE | Netflix',
+    channel: 'Netflix',
     channelAvatar: 'https://yt3.googleusercontent.com/ZJXeYEqiW-S6m2aq4Od06PhnzX-mub-BhhFADsAirgfljCE3rrPm46_FRZCc0IaGgEu78z9KUlU=s160-c-k-c0x00ffffff-no-rj',
     category: 'Documentaries',
-    views: '26M views',
-    duration: '4:48',
-    thumbnail: 'https://i.ytimg.com/vi/e_z7rO_zK0I/hqdefault.jpg',
-    description: 'Narrated by Sir David Attenborough, witnessing leopards prowling urban alleys and peregrine falcons soaring skyscrapers.'
+    views: '31M views',
+    duration: '49:15',
+    thumbnail: 'https://i.ytimg.com/vi/r9PeYPHdpNo/hqdefault.jpg',
+    description: 'Sir David Attenborough narrates the breathtaking biodiversity of coastal shallow seas and coral reefs.'
   },
   {
-    id: 'n9r5s_2T_2g',
-    title: 'Mariana Trench: To The Deepest Place On Earth',
-    channel: 'National Geographic',
+    id: 'ZC0DxdjTjT8',
+    title: 'Inside the Marianas Trench: Earth\'s Deepest Point',
+    channel: 'HISTORY',
     channelAvatar: 'https://yt3.googleusercontent.com/-FOFg8o1y4dAHDB2MvhORHnLMOaaOKnaNUNsrU-U57Eac6gjB5VO8sYJQC1KkULGQvKP2XpArA=s160-c-k-c0x00ffffff-no-rj',
     category: 'Documentaries',
-    views: '34M views',
+    views: '14M views',
     duration: '45:10',
-    thumbnail: 'https://i.ytimg.com/vi/n9r5s_2T_2g/hqdefault.jpg',
+    thumbnail: 'https://i.ytimg.com/vi/ZC0DxdjTjT8/hqdefault.jpg',
     description: 'Diving 36,000 feet down into the Challenger Deep, where alien-like bioluminescent sea creatures thrive under crushing pressure.'
   },
   {
@@ -775,7 +776,7 @@ export async function fetchYouTubeSearch(query, page = 1) {
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data.results)) {
-        return data.results;
+        return data.results.filter((v) => v && v.id && v.available !== false);
       }
     }
   } catch (err) {
@@ -786,10 +787,11 @@ export async function fetchYouTubeSearch(query, page = 1) {
   if (page > 1) return [];
   const q = query.toLowerCase();
   return DEFAULT_YOUTUBE_VIDEOS.filter(v =>
-    v.title.toLowerCase().includes(q) ||
+    v.available !== false &&
+    (v.title.toLowerCase().includes(q) ||
     v.channel.toLowerCase().includes(q) ||
     v.category.toLowerCase().includes(q) ||
-    v.description?.toLowerCase().includes(q)
+    v.description?.toLowerCase().includes(q))
   );
 }
 
@@ -827,18 +829,29 @@ const dynamicAvatarCache = new Map();
 
 // Get authentic channel / creator profile avatar (Unblocked through CineVault origin)
 export function getChannelAvatar(channelName, video) {
-  // 1. Direct explicit avatar attached to video object (safely proxied to bypass school network blocks)
+  const normalized = (channelName || video?.channel || '').trim();
+
+  // 1. Direct explicit avatar attached to video object
   const explicitAvatar = video?.channelAvatar || video?.avatar;
   if (explicitAvatar) {
-    if (explicitAvatar.startsWith('/api/')) return explicitAvatar;
-    if (explicitAvatar.startsWith('http://') || explicitAvatar.startsWith('https://') || explicitAvatar.startsWith('//')) {
-      const target = explicitAvatar.startsWith('//') ? 'https:' + explicitAvatar : explicitAvatar;
-      return `/api/youtube/avatar-proxy?url=${encodeURIComponent(target)}`;
+    if (isStaticHost()) {
+      if (explicitAvatar.startsWith('/api/')) {
+        const match = explicitAvatar.match(/url=([^&]+)/);
+        if (match) return decodeURIComponent(match[1]);
+      } else {
+        const target = explicitAvatar.startsWith('//') ? 'https:' + explicitAvatar : explicitAvatar;
+        return resolveAssetUrl(target);
+      }
+    } else {
+      if (explicitAvatar.startsWith('/api/')) return explicitAvatar;
+      if (explicitAvatar.startsWith('http://') || explicitAvatar.startsWith('https://') || explicitAvatar.startsWith('//')) {
+        const target = explicitAvatar.startsWith('//') ? 'https:' + explicitAvatar : explicitAvatar;
+        return `/api/youtube/avatar-proxy?url=${encodeURIComponent(target)}`;
+      }
+      return resolveAssetUrl(explicitAvatar);
     }
-    return explicitAvatar;
   }
 
-  const normalized = (channelName || video?.channel || '').trim();
   if (!normalized) return `https://ui-avatars.com/api/?name=YT&background=27272a&color=f59e0b&size=160&bold=true`;
 
   // 2. Check dynamic cache
@@ -847,19 +860,30 @@ export function getChannelAvatar(channelName, video) {
   }
 
   // 3. Known official creator avatar
-  if (KNOWN_CHANNEL_AVATARS[normalized]) {
-    const rawUrl = KNOWN_CHANNEL_AVATARS[normalized];
-    return `/api/youtube/avatar-proxy?url=${encodeURIComponent(rawUrl)}`;
-  }
-
-  // Case-insensitive lookup in known channels
-  for (const [name, url] of Object.entries(KNOWN_CHANNEL_AVATARS)) {
-    if (name.toLowerCase() === normalized.toLowerCase()) {
-      return `/api/youtube/avatar-proxy?url=${encodeURIComponent(url)}`;
+  let knownUrl = KNOWN_CHANNEL_AVATARS[normalized];
+  if (!knownUrl) {
+    for (const [name, url] of Object.entries(KNOWN_CHANNEL_AVATARS)) {
+      if (name.toLowerCase() === normalized.toLowerCase()) {
+        knownUrl = url;
+        break;
+      }
     }
   }
 
-  // 4. Request dynamic exact avatar from YouTube via backend scraper proxy
+  if (knownUrl) {
+    // If running on static host (e.g. GitHub Pages), return official CDN directly
+    if (isStaticHost()) {
+      return knownUrl;
+    }
+    return `/api/youtube/avatar-proxy?url=${encodeURIComponent(knownUrl)}`;
+  }
+
+  // 4. If on static host (GitHub Pages), return clean UI avatar without attempting /api/
+  if (isStaticHost()) {
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(normalized)}&background=27272a&color=f59e0b&size=160&bold=true`;
+  }
+
+  // 5. Request dynamic exact avatar from YouTube via backend scraper proxy
   const videoId = video?.id || '';
   return `/api/youtube/channel-avatar?channel=${encodeURIComponent(normalized)}&videoId=${videoId}`;
 }
@@ -867,6 +891,9 @@ export function getChannelAvatar(channelName, video) {
 // Fetch live authentic YouTube feed across categories or custom interest seeds
 export async function fetchYouTubeFeed(category = 'All', seed = '', page = 1) {
   try {
+    if (isStaticHost()) {
+      return generateInfiniteYouTubeBatch(category, seed || 42, page, 16);
+    }
     const params = new URLSearchParams();
     if (category && category !== '✨ For You' && category !== 'For You (Algorithm)') {
       params.set('category', category);
@@ -878,12 +905,17 @@ export async function fetchYouTubeFeed(category = 'All', seed = '', page = 1) {
       params.set('page', String(page));
     }
     const res = await fetch(`/api/youtube/feed?${params.toString()}`);
-    if (!res.ok) return [];
+    if (!res.ok) {
+      return generateInfiniteYouTubeBatch(category, seed || 42, page, 16);
+    }
     const data = await res.json();
-    return Array.isArray(data.videos) ? data.videos : [];
+    if (data && data.ok && Array.isArray(data.videos) && data.videos.length > 0) {
+      return data.videos.filter((v) => v && v.id && v.available !== false);
+    }
+    return generateInfiniteYouTubeBatch(category, seed || 42, page, 16);
   } catch (err) {
-    console.warn('Failed to fetch YouTube live feed:', err);
-    return [];
+    console.warn('Failed to fetch YouTube live feed, using curated fallback:', err);
+    return generateInfiniteYouTubeBatch(category, seed || 42, page, 16);
   }
 }
 
@@ -947,18 +979,106 @@ export function generateInfiniteYouTubeBatch(category = 'All', seed = Date.now()
 export function getVideoThumbnail(videoIdOrObject, defaultThumbnail) {
   let vidId = '';
   let fallback = defaultThumbnail;
+  let archiveId = '';
 
   if (videoIdOrObject && typeof videoIdOrObject === 'object') {
     vidId = videoIdOrObject.id || '';
     fallback = videoIdOrObject.thumbnail || defaultThumbnail;
+    archiveId = videoIdOrObject.archiveId || '';
   } else if (typeof videoIdOrObject === 'string') {
     vidId = videoIdOrObject.trim();
   }
 
-  if (vidId && /^[a-zA-Z0-9_-]{11}$/.test(vidId)) {
+  // Handle specific known local movie IDs
+  if (vidId === 'tom-and-jerry-the-movie-1992') {
+    return resolveAssetUrl('posters/tom_and_jerry.png');
+  }
+  if (vidId === 'tom-and-jerry-fast-and-furry') {
+    return resolveAssetUrl('posters/tom_and_jerry_fast_and_furry.jpg');
+  }
+
+  // Handle Archive.org media items
+  if (archiveId) {
+    if (fallback && !fallback.includes('/api/')) {
+      return resolveAssetUrl(fallback);
+    }
+    return `https://archive.org/services/img/${encodeURIComponent(archiveId)}`;
+  }
+
+  // Clean corrupted fallback URLs that previously saved /api/youtube/thumbnail to localStorage
+  if (fallback && typeof fallback === 'string' && fallback.includes('/api/youtube/thumbnail')) {
+    const match = fallback.match(/id=([^&]+)/);
+    if (match) {
+      const parsedId = match[1];
+      if (parsedId === 'tom-and-jerry-the-movie-1992') return resolveAssetUrl('posters/tom_and_jerry.png');
+      if (parsedId === 'tom-and-jerry-fast-and-furry') return resolveAssetUrl('posters/tom_and_jerry_fast_and_furry.jpg');
+      if (/^[a-zA-Z0-9_-]{11}$/.test(parsedId)) {
+        return `https://i.ytimg.com/vi/${parsedId}/hqdefault.jpg`;
+      }
+    }
+    fallback = '';
+  }
+
+  if (fallback && typeof fallback === 'string') {
+    if (fallback.includes('posters/')) {
+      return resolveAssetUrl(fallback);
+    }
+  }
+
+  const isYtId = vidId && /^[a-zA-Z0-9_-]{11}$/.test(vidId);
+
+  // If on static host (GitHub Pages), NEVER return /api/... endpoints!
+  if (isStaticHost()) {
+    if (fallback && (fallback.startsWith('http://') || fallback.startsWith('https://'))) {
+      return fallback;
+    }
+    if (isYtId) {
+      return `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg`;
+    }
+    return resolveAssetUrl(fallback) || (vidId ? `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg` : `https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80`);
+  }
+
+  // Full-stack runtime with server proxy
+  if (isYtId) {
     return `/api/youtube/thumbnail?id=${vidId}`;
   }
-  return fallback || (vidId ? `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg` : `https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80`);
+  return resolveAssetUrl(fallback) || (vidId ? `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg` : `https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80`);
+}
+
+// Check if a YouTube video is currently available / public
+export async function checkYouTubeVideoAvailability(videoId) {
+  if (!videoId || typeof videoId !== 'string') return false;
+  const cleanId = videoId.trim();
+  if (!/^[a-zA-Z0-9_-]{11}$/.test(cleanId)) return false;
+
+  // First try backend resolver if running in fullstack mode
+  if (!isStaticHost()) {
+    try {
+      const res = await fetch(`/api/youtube/resolve?id=${cleanId}`, {
+        signal: AbortSignal.timeout(4500)
+      });
+      if (res.status === 404) return false;
+      if (res.ok) {
+        const data = await res.json();
+        return data.ok !== false && data.available !== false;
+      }
+    } catch {
+      // Fall through to client direct oEmbed check
+    }
+  }
+
+  // Client-side direct YouTube oEmbed check (works globally without API key)
+  try {
+    const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${cleanId}&format=json`;
+    const res = await fetch(oembedUrl, {
+      signal: AbortSignal.timeout(4000)
+    });
+    if (res.status === 404) return false;
+    return res.ok;
+  } catch {
+    // If network or cors fails, default to true to avoid false positives on airgapped setups
+    return true;
+  }
 }
 
 // Resolve YouTube video metadata and proxy player URLs via backend unblocked resolver
@@ -968,6 +1088,9 @@ export async function resolveYouTubeMetadata(input) {
     const res = await fetch(`/api/youtube/resolve?url=${encodeURIComponent(input.trim())}`, {
       signal: AbortSignal.timeout(6000)
     });
+    if (res.status === 404) {
+      return { ok: false, available: false, error: 'Video is unavailable' };
+    }
     if (res.ok) {
       return await res.json();
     }

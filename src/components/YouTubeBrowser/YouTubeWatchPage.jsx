@@ -22,9 +22,11 @@ import {
   Maximize2,
   HardDriveDownload,
   Tag,
-  WifiOff
+  WifiOff,
+  AlertCircle,
+  Home
 } from 'lucide-react';
-import { YOUTUBE_PROXY_NODES, getVideoThumbnail, getChannelAvatar } from '../../data/youtubeData';
+import { YOUTUBE_PROXY_NODES, getVideoThumbnail, getChannelAvatar, checkYouTubeVideoAvailability } from '../../data/youtubeData';
 import {
   recordWatchEvent,
   recordInteractionEvent,
@@ -55,6 +57,7 @@ export const YouTubeWatchPage = ({
 }) => {
   const [reloadKey, setReloadKey] = useState(0);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [isUnavailable, setIsUnavailable] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isOfflineSaved, setIsOfflineSaved] = useState(false);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
@@ -140,9 +143,23 @@ export const YouTubeWatchPage = ({
     }
   }, [video?.id]);
 
-  // Reset loading state on video change or node change
+  // Reset loading and check video availability on video change or node change
   useEffect(() => {
     setIsVideoLoading(true);
+    setIsUnavailable(false);
+
+    if (video?.id) {
+      let isMounted = true;
+      checkYouTubeVideoAvailability(video.id).then((available) => {
+        if (isMounted && !available) {
+          setIsUnavailable(true);
+          setIsVideoLoading(false);
+        }
+      });
+      return () => {
+        isMounted = false;
+      };
+    }
   }, [video?.id, selectedNodeIndex, reloadKey]);
 
   // Handle Share
@@ -221,6 +238,43 @@ export const YouTubeWatchPage = ({
         <div className="flex-1 w-full min-w-0">
           {/* Player Container */}
           <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-zinc-800 shadow-2xl shadow-black/80">
+            {/* Video Unavailable Overlay */}
+            {isUnavailable && (
+              <div className="absolute inset-0 z-30 bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-3">
+                  <AlertCircle className="w-7 h-7 text-red-400" />
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white mb-1">Video is Unavailable</h3>
+                <p className="text-xs sm:text-sm text-zinc-400 max-w-md mb-5 leading-relaxed">
+                  This video has been removed, marked private, or is no longer available on YouTube. It is not playable.
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      if (recommendedVideos.length > 0) {
+                        onSelectVideo(recommendedVideos[0]);
+                      } else {
+                        window.dispatchEvent(new CustomEvent('cinevault_yt_refresh_feed', { detail: { seed: Date.now() } }));
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-lg"
+                  >
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>Watch Next Recommended</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent('cinevault_yt_refresh_feed', { detail: { seed: Date.now() } }));
+                    }}
+                    className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Browse Feed</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Cinematic Loading Overlay */}
             {isVideoLoading && (
               <div className="absolute inset-0 z-15 bg-zinc-950 flex flex-col items-center justify-center p-6 text-center select-none overflow-hidden">

@@ -51,7 +51,7 @@ export const YouTubeVideoCard = ({
     }
   }, [video?.id, isOfflineProp]);
 
-  const thumbUrl = getVideoThumbnail(video.id, video.thumbnail);
+  const thumbUrl = getVideoThumbnail(video, video.thumbnail);
   const avatarUrl = getChannelAvatar(video.channel, video);
   const isVerified = video.isVerified || (video.channel && VERIFIED_CHANNELS.has(video.channel.toLowerCase()));
 
@@ -72,14 +72,20 @@ export const YouTubeVideoCard = ({
           src={thumbUrl}
           alt={video.title}
           loading="lazy"
-          referrerPolicy="strict-origin-when-cross-origin"
+          referrerPolicy="no-referrer"
           onError={(e) => {
             if (!e.currentTarget.dataset.triedFallback1) {
               e.currentTarget.dataset.triedFallback1 = 'true';
-              e.currentTarget.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
+              if (video.archiveId) {
+                e.currentTarget.src = `https://archive.org/services/img/${encodeURIComponent(video.archiveId)}`;
+              } else if (video.id && /^[a-zA-Z0-9_-]{11}$/.test(video.id)) {
+                e.currentTarget.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
+              } else {
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80';
+              }
             } else if (!e.currentTarget.dataset.triedFallback2) {
               e.currentTarget.dataset.triedFallback2 = 'true';
-              e.currentTarget.src = video.thumbnail || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80';
+              e.currentTarget.src = 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80';
             }
           }}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"

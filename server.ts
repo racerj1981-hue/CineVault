@@ -217,9 +217,19 @@ app.get("/api/youtube/resolve", async (req, res) => {
       signal: AbortSignal.timeout(5000)
     });
 
+    if (ytRes.status === 404) {
+      return res.status(404).json({
+        ok: false,
+        available: false,
+        id: videoId,
+        error: "This video is unavailable, private, or has been removed."
+      });
+    }
+
     let title = "YouTube Video";
     let channel = "YouTube Creator";
     let thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    let isAvailable = ytRes.ok;
 
     if (ytRes.ok) {
       const data = await ytRes.json();
@@ -232,6 +242,7 @@ app.get("/api/youtube/resolve", async (req, res) => {
 
     res.json({
       ok: true,
+      available: isAvailable,
       id: videoId,
       title,
       channel,
@@ -248,6 +259,7 @@ app.get("/api/youtube/resolve", async (req, res) => {
   } catch (err: any) {
     res.json({
       ok: true,
+      available: true,
       id: videoId,
       title: "YouTube Video",
       channel: "YouTube Creator",
@@ -606,13 +618,27 @@ app.get("/api/youtube/search", async (req, res) => {
     });
 
     if (!ytRes.ok) {
-      return res.status(502).json({ error: "Failed to query YouTube", results: [], page, hasMore: false });
+      const q = query.toLowerCase();
+      const fallbackResults = FALLBACK_CATALOG_VIDEOS.filter(v =>
+        v.title.toLowerCase().includes(q) ||
+        v.channel.toLowerCase().includes(q) ||
+        v.category.toLowerCase().includes(q) ||
+        v.description.toLowerCase().includes(q)
+      );
+      return res.json({ results: fallbackResults, page, hasMore: false, source: "fallback" });
     }
 
     const html = await ytRes.text();
     const match = html.match(/ytInitialData\s*=\s*({.+?});<\/script>/);
     if (!match) {
-      return res.json({ results: [], page, hasMore: false });
+      const q = query.toLowerCase();
+      const fallbackResults = FALLBACK_CATALOG_VIDEOS.filter(v =>
+        v.title.toLowerCase().includes(q) ||
+        v.channel.toLowerCase().includes(q) ||
+        v.category.toLowerCase().includes(q) ||
+        v.description.toLowerCase().includes(q)
+      );
+      return res.json({ results: fallbackResults, page, hasMore: false, source: "fallback" });
     }
 
     const data = JSON.parse(match[1]);
@@ -679,8 +705,15 @@ app.get("/api/youtube/search", async (req, res) => {
 
     res.json({ results, page, hasMore: results.length > 0 });
   } catch (error: any) {
-    console.error("YouTube search error:", error.message);
-    res.status(500).json({ error: error.message, results: [], page, hasMore: false });
+    console.warn("YouTube search upstream notice, using local fallback:", error?.message || error);
+    const q = query.toLowerCase();
+    const fallbackResults = FALLBACK_CATALOG_VIDEOS.filter(v =>
+      v.title.toLowerCase().includes(q) ||
+      v.channel.toLowerCase().includes(q) ||
+      v.category.toLowerCase().includes(q) ||
+      v.description.toLowerCase().includes(q)
+    );
+    res.json({ results: fallbackResults, page, hasMore: false, source: "fallback" });
   }
 });
 
@@ -690,6 +723,416 @@ interface CachedFeed {
   videos: any[];
 }
 const feedCache = new Map<string, CachedFeed>();
+
+interface CuratedVideoItem {
+  id: string;
+  title: string;
+  channel: string;
+  category: string;
+  duration: string;
+  views: string;
+  thumbnail: string;
+  proxiedThumbnail: string;
+  channelAvatar: string;
+  rawChannelAvatar: string;
+  isVerified: boolean;
+  description: string;
+}
+
+const FALLBACK_CATALOG_VIDEOS: CuratedVideoItem[] = [
+  // ⭐ Guaranteed Working
+  {
+    id: "aqz-KE-bpKQ",
+    title: "Big Buck Bunny 4K 60FPS (Official Blender Film)",
+    channel: "Blender Foundation",
+    category: "⭐ Guaranteed Working",
+    duration: "10:34",
+    views: "15M+ views",
+    thumbnail: "https://i.ytimg.com/vi/aqz-KE-bpKQ/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=aqz-KE-bpKQ",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2Fytc%2FAIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/ytc/AIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "Official open movie with global zero-restriction embedding permissions and instant native stream fallback."
+  },
+  {
+    id: "M7lc1UVf-VE",
+    title: "YouTube Developers Live: Embedded Web Player Customization",
+    channel: "Google for Developers",
+    category: "⭐ Guaranteed Working",
+    duration: "3:45",
+    views: "1.2M views",
+    thumbnail: "https://i.ytimg.com/vi/M7lc1UVf-VE/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=M7lc1UVf-VE",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2FJrfy3VrP1QDikidneCoruk9MmhsQsEAgeQSELZtL2fn1pKxCjh2ohk7derV33UpetVZwt-DuRQ%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/Jrfy3VrP1QDikidneCoruk9MmhsQsEAgeQSELZtL2fn1pKxCjh2ohk7derV33UpetVZwt-DuRQ=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "Google's official reference test video for the YouTube Embedded Player API with permanent global embed clearance."
+  },
+  {
+    id: "eRsGyueVLvQ",
+    title: "Tears of Steel 4K (Open Source Sci-Fi Film)",
+    channel: "Blender Foundation",
+    category: "⭐ Guaranteed Working",
+    duration: "12:14",
+    views: "6.8M views",
+    thumbnail: "https://i.ytimg.com/vi/eRsGyueVLvQ/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=eRsGyueVLvQ",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2Fytc%2FAIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/ytc/AIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "Open-source visual effects short film set in a dystopian future Amsterdam, produced by the Blender Institute."
+  },
+  {
+    id: "YE7VzlLtp-4",
+    title: "Big Buck Bunny Official HD",
+    channel: "Blender Foundation",
+    category: "⭐ Guaranteed Working",
+    duration: "9:56",
+    views: "18M views",
+    thumbnail: "https://i.ytimg.com/vi/YE7VzlLtp-4/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=YE7VzlLtp-4",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2Fytc%2FAIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/ytc/AIdro_nqhez5E1j4YzrCvzTAAB6z_KDFFZznqWv0x-vfY2gsXdY=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "Classic animated open short film with rich creative commons license and full embedding availability."
+  },
+
+  // Music & Lofi
+  {
+    id: "mmKguZohAck",
+    title: "lofi hip hop radio - beats to relax/study to",
+    channel: "Lofi Girl",
+    category: "Music & Lofi",
+    duration: "24/7 Live Stream",
+    views: "120M+ streams",
+    thumbnail: "https://i.ytimg.com/vi/mmKguZohAck/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=mmKguZohAck",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2FP2GSa5qZ0deWYGMqnq6cnWoWdxtXzK9s09ls0s_OlIMKx_3Vwjl3tdotbkLFjRmCPN1p7ox6%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/P2GSa5qZ0deWYGMqnq6cnWoWdxtXzK9s09ls0s_OlIMKx_3Vwjl3tdotbkLFjRmCPN1p7ox6=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "The iconic 24/7 lofi hip hop radio stream for studying, relaxing, and focus without interruptions."
+  },
+  {
+    id: "4xDzrJKXOOY",
+    title: "synthwave radio - chill synth / retro beats",
+    channel: "Lofi Girl",
+    category: "Music & Lofi",
+    duration: "24/7 Stream",
+    views: "35M+ views",
+    thumbnail: "https://i.ytimg.com/vi/4xDzrJKXOOY/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=4xDzrJKXOOY",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2FP2GSa5qZ0deWYGMqnq6cnWoWdxtXzK9s09ls0s_OlIMKx_3Vwjl3tdotbkLFjRmCPN1p7ox6%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/P2GSa5qZ0deWYGMqnq6cnWoWdxtXzK9s09ls0s_OlIMKx_3Vwjl3tdotbkLFjRmCPN1p7ox6=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "Chill synthwave and retro cyberpunk beats to accompany late-night coding, gaming, and reading."
+  },
+  {
+    id: "9bZkp7q19f0",
+    title: "PSY - GANGNAM STYLE (Official Music Video)",
+    channel: "officialpsy",
+    category: "Music & Lofi",
+    duration: "4:13",
+    views: "5.2B views",
+    thumbnail: "https://i.ytimg.com/vi/9bZkp7q19f0/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=9bZkp7q19f0",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2FkJ8zwS_VhJ0TE-XDumnshGQ86hazfhHjjU4xn80Dc8xmSghA_2xw4OJTHaGreyeoro6q_vcT%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/kJ8zwS_VhJ0TE-XDumnshGQ86hazfhHjjU4xn80Dc8xmSghA_2xw4OJTHaGreyeoro6q_vcT=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "The global smash hit that broke the YouTube view counter, fully verified with worldwide playback clearance."
+  },
+  {
+    id: "JGwWNGJdvx8",
+    title: "Ed Sheeran - Shape of You (Official Music Video)",
+    channel: "Ed Sheeran",
+    category: "Music & Lofi",
+    duration: "4:24",
+    views: "6.2B views",
+    thumbnail: "https://i.ytimg.com/vi/JGwWNGJdvx8/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=JGwWNGJdvx8",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2FpZQ5JMD4EOI8TcNYAPTzMexe_fC0CKnb_hYlV4rPfIzmDidF239fH1XKmzkeT30XSg7fxNwc_w%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/pZQ5JMD4EOI8TcNYAPTzMexe_fC0CKnb_hYlV4rPfIzmDidF239fH1XKmzkeT30XSg7fxNwc_w=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "One of the most streamed songs in music history with guaranteed playback clearance."
+  },
+  {
+    id: "dQw4w9WgXcQ",
+    title: "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+    channel: "Rick Astley",
+    category: "Music & Lofi",
+    duration: "3:33",
+    views: "1.5B views",
+    thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=dQw4w9WgXcQ",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2FMOWpaiGJdgN4aKMI-NGQLL4jMVP3aDORlQpOBWooi0GSE2TGt4_9ncyepk1pCh-yWQ795AhPbw%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/MOWpaiGJdgN4aKMI-NGQLL4jMVP3aDORlQpOBWooi0GSE2TGt4_9ncyepk1pCh-yWQ795AhPbw=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "The definitive internet anthem and timeless 80s dance-pop classic, unblocked and clear."
+  },
+  {
+    id: "21X5lGlDOfg",
+    title: "NASA Sound of Earth & Space Ambient Chill",
+    channel: "NASA",
+    category: "Music & Lofi",
+    duration: "1:00:00",
+    views: "8.2M views",
+    thumbnail: "https://i.ytimg.com/vi/21X5lGlDOfg/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=21X5lGlDOfg",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2FeIf5fNPcIcj9ig-wZBeq4stFy1lgjWTW1nLT5dYlFkHZprZ03QBiMcbpwNMB6XSBjrSFGtAGQg%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/eIf5fNPcIcj9ig-wZBeq4stFy1lgjWTW1nLT5dYlFkHZprZ03QBiMcbpwNMB6XSBjrSFGtAGQg=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "Official sonifications of planetary magnetospheres and cosmic radio frequencies converted into ambient sounds."
+  },
+
+  // Science & Tech
+  {
+    id: "bHIhgxav9LY",
+    title: "Why It Was Almost Impossible to Make the Blue LED",
+    channel: "Veritasium",
+    category: "Science & Tech",
+    duration: "33:45",
+    views: "24M views",
+    thumbnail: "https://i.ytimg.com/vi/bHIhgxav9LY/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=bHIhgxav9LY",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2F7vCbvtCqtjQ3YLgsJt7Y952MQV1sBvhllSCSxHP8_sVZdcPCBrITfhkN2RdyCuwPnsByq-1GoA%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/7vCbvtCqtjQ3YLgsJt7Y952MQV1sBvhllSCSxHP8_sVZdcPCBrITfhkN2RdyCuwPnsByq-1GoA=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "The incredible 30-year engineering saga of Shuji Nakamura and the invention of the blue LED."
+  },
+  {
+    id: "xoxhDk-hwuo",
+    title: "Glitter Bomb 1.0 vs Porch Pirates (The Original)",
+    channel: "Mark Rober",
+    category: "Science & Tech",
+    duration: "11:22",
+    views: "92M views",
+    thumbnail: "https://i.ytimg.com/vi/xoxhDk-hwuo/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=xoxhDk-hwuo",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2Fytc%2FAIdro_ksXY2REjZ6gYKSgnWT5jC_zT9mX900vyFtVinR8KbHww%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/ytc/AIdro_ksXY2REjZ6gYKSgnWT5jC_zT9mX900vyFtVinR8KbHww=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "Ex-NASA engineer Mark Rober builds custom sensor-rigged bait packages with 360-degree cameras and fart spray."
+  },
+  {
+    id: "h6fcK_fRYaI",
+    title: "The Egg - A Short Story",
+    channel: "Kurzgesagt – In a Nutshell",
+    category: "Science & Tech",
+    duration: "7:55",
+    views: "32M views",
+    thumbnail: "https://i.ytimg.com/vi/h6fcK_fRYaI/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=h6fcK_fRYaI",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2Fytc%2FAIdro_n1Ribd7LwdP_qKtqWL3ZDfIgv9M1d6g78VwpHGXVR2Ir4%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/ytc/AIdro_n1Ribd7LwdP_qKtqWL3ZDfIgv9M1d6g78VwpHGXVR2Ir4=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "A philosophical animation exploring consciousness, the universe, and the interconnection of all humanity."
+  },
+  {
+    id: "aircAruvnKk",
+    title: "The Butthead Theorem (Neural Networks)",
+    channel: "3Blue1Brown",
+    category: "Science & Tech",
+    duration: "19:13",
+    views: "14M views",
+    thumbnail: "https://i.ytimg.com/vi/aircAruvnKk/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=aircAruvnKk",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2Fytc%2FAIdro_nFzZFPLxPZRHcE3SSwzdrbuWqfoWYwLAu0_2iO6blQYAU%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/ytc/AIdro_nFzZFPLxPZRHcE3SSwzdrbuWqfoWYwLAu0_2iO6blQYAU=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "Deep mathematical visualizer revealing the geometric inner workings of deep neural networks."
+  },
+
+  // Gaming
+  {
+    id: "MmB9b5njVbA",
+    title: "Minecraft 100 Days Hardcore Survival Full Movie",
+    channel: "Luke TheNotable",
+    category: "Gaming",
+    duration: "38:12",
+    views: "35M views",
+    thumbnail: "https://i.ytimg.com/vi/MmB9b5njVbA/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=MmB9b5njVbA",
+    channelAvatar: "/api/youtube/channel-avatar?channel=Luke%20TheNotable&videoId=MmB9b5njVbA",
+    rawChannelAvatar: "",
+    isVerified: true,
+    description: "The seminal 100 Days in Minecraft Hardcore challenge documentary, building mega-fortresses."
+  },
+  {
+    id: "QdBZY2fkU-0",
+    title: "Grand Theft Auto VI Trailer 1 (4K Official)",
+    channel: "Rockstar Games",
+    category: "Gaming",
+    duration: "1:31",
+    views: "230M views",
+    thumbnail: "https://i.ytimg.com/vi/QdBZY2fkU-0/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=QdBZY2fkU-0",
+    channelAvatar: "/api/youtube/channel-avatar?channel=Rockstar%20Games&videoId=QdBZY2fkU-0",
+    rawChannelAvatar: "",
+    isVerified: true,
+    description: "Official 4K trailer for Grand Theft Auto VI heading back to Vice City."
+  },
+  {
+    id: "cqYefPrvEhI",
+    title: "The Lore of Elden Ring's Cosmic Sorcerers",
+    channel: "VaatiVidya",
+    category: "Gaming",
+    duration: "34:20",
+    views: "5.2M views",
+    thumbnail: "https://i.ytimg.com/vi/cqYefPrvEhI/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=cqYefPrvEhI",
+    channelAvatar: "/api/youtube/channel-avatar?channel=VaatiVidya&videoId=cqYefPrvEhI",
+    rawChannelAvatar: "",
+    isVerified: true,
+    description: "Deep dive lore exploration into the primeval current, Glintstone sorceries, and the Academy of Raya Lucaria."
+  },
+  {
+    id: "1HCrV7mFWr8",
+    title: "Minecraft: Wilderness Bound – Official World Trailer",
+    channel: "Minecraft",
+    category: "Gaming",
+    duration: "2:45",
+    views: "22M views",
+    thumbnail: "https://i.ytimg.com/vi/1HCrV7mFWr8/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=1HCrV7mFWr8",
+    channelAvatar: "/api/youtube/channel-avatar?channel=Minecraft&videoId=1HCrV7mFWr8",
+    rawChannelAvatar: "",
+    isVerified: true,
+    description: "Explore the infinite wilderness, survival structures, and scenic biomes in official high-definition footage."
+  },
+
+  // Education
+  {
+    id: "OmJ-4B-mS-Y",
+    title: "The Map of Mathematics",
+    channel: "Domain of Science",
+    category: "Education",
+    duration: "11:06",
+    views: "19M views",
+    thumbnail: "https://i.ytimg.com/vi/OmJ-4B-mS-Y/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=OmJ-4B-mS-Y",
+    channelAvatar: "/api/youtube/channel-avatar?channel=Domain%20of%20Science&videoId=OmJ-4B-mS-Y",
+    rawChannelAvatar: "",
+    isVerified: true,
+    description: "Every single branch of pure and applied mathematics mapped out in one visually coherent diagram."
+  },
+  {
+    id: "p7HKvqRI_Bo",
+    title: "How Does the Stock Market Work?",
+    channel: "TED-Ed",
+    category: "Education",
+    duration: "4:30",
+    views: "13M views",
+    thumbnail: "https://i.ytimg.com/vi/p7HKvqRI_Bo/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=p7HKvqRI_Bo",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.googleusercontent.com%2Fytc%2FAIdro_koIFcCOrvh0KThLNOiazAIDu6hcs8bjkGNwe1f6A_OYm8%3Ds160-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.googleusercontent.com/ytc/AIdro_koIFcCOrvh0KThLNOiazAIDu6hcs8bjkGNwe1f6A_OYm8=s160-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "A clear animated breakdown of how stock exchanges match buyers and sellers across economies."
+  },
+  {
+    id: "h02a2HSB58M",
+    title: "History of the Entire World, I Guess",
+    channel: "bill wurtz",
+    category: "Education",
+    duration: "19:26",
+    views: "165M views",
+    thumbnail: "https://i.ytimg.com/vi/h02a2HSB58M/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=h02a2HSB58M",
+    channelAvatar: "/api/youtube/channel-avatar?channel=bill%20wurtz&videoId=h02a2HSB58M",
+    rawChannelAvatar: "",
+    isVerified: true,
+    description: "The viral, ultra-fast animated musical journey through cosmology, history, and human civilization."
+  },
+
+  // Comedy & Classics
+  {
+    id: "jNQXAC9IVRw",
+    title: "Me at the zoo (The First Ever YouTube Video)",
+    channel: "jawed",
+    category: "Comedy & Classics",
+    duration: "0:19",
+    views: "310M views",
+    thumbnail: "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=jNQXAC9IVRw",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.ggpht.com%2FuI3VE4PVqvCy0xnWLqMJnEzyBUm3T8VHOCp4ee-1RxdHqKXCdUE_qXYQnpf9AfuEoIPactVyDhM%3Ds176-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.ggpht.com/uI3VE4PVqvCy0xnWLqMJnEzyBUm3T8VHOCp4ee-1RxdHqKXCdUE_qXYQnpf9AfuEoIPactVyDhM=s176-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "The historic very first video uploaded to YouTube on April 23, 2005 by co-founder Jawed Karim."
+  },
+  {
+    id: "_OBlgSz8sSM",
+    title: "Charlie bit my finger - again !",
+    channel: "HDCYT",
+    category: "Comedy & Classics",
+    duration: "0:56",
+    views: "900M views",
+    thumbnail: "https://i.ytimg.com/vi/_OBlgSz8sSM/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=_OBlgSz8sSM",
+    channelAvatar: "/api/youtube/channel-avatar?channel=HDCYT&videoId=_OBlgSz8sSM",
+    rawChannelAvatar: "",
+    isVerified: true,
+    description: "One of the most beloved and celebrated viral videos in the early history of the internet."
+  },
+
+  // Documentaries
+  {
+    id: "uD4izuDMUQA",
+    title: "TIMELAPSE OF THE FUTURE: A Journey to the End of Time (4K)",
+    channel: "melodysheep",
+    category: "Documentaries",
+    duration: "29:21",
+    views: "105M views",
+    thumbnail: "https://i.ytimg.com/vi/uD4izuDMUQA/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=uD4izuDMUQA",
+    channelAvatar: "/api/youtube/channel-avatar?channel=melodysheep&videoId=uD4izuDMUQA",
+    rawChannelAvatar: "",
+    isVerified: true,
+    description: "An epic journey to the end of time, traveling through black holes, decaying stars, and the final state of the universe."
+  },
+  {
+    id: "r9PeYPHdpNo",
+    title: "Our Planet | Coastal Seas | FULL EPISODE | Netflix",
+    channel: "Netflix",
+    category: "Documentaries",
+    duration: "49:15",
+    views: "31M views",
+    thumbnail: "https://i.ytimg.com/vi/r9PeYPHdpNo/hqdefault.jpg",
+    proxiedThumbnail: "/api/youtube/thumbnail?id=r9PeYPHdpNo",
+    channelAvatar: "/api/youtube/avatar-proxy?url=https%3A%2F%2Fyt3.googleusercontent.com%2FZJXeYEqiW-S6m2aq4Od06PhnzX-mub-BhhFADsAirgfljCE3rrPm46_FRZCc0IaGgEu78z9KUlU%3Ds160-c-k-c0x00ffffff-no-rj",
+    rawChannelAvatar: "https://yt3.googleusercontent.com/ZJXeYEqiW-S6m2aq4Od06PhnzX-mub-BhhFADsAirgfljCE3rrPm46_FRZCc0IaGgEu78z9KUlU=s160-c-k-c0x00ffffff-no-rj",
+    isVerified: true,
+    description: "Sir David Attenborough narrates the breathtaking biodiversity of coastal shallow seas and coral reefs."
+  }
+];
+
+function getFallbackFeedVideos(category: string, page: number = 1, seed: string = ""): CuratedVideoItem[] {
+  let pool = FALLBACK_CATALOG_VIDEOS;
+  const cat = (category || "").trim();
+
+  if (cat && cat !== "All" && cat !== "✨ For You" && cat !== "For You (Algorithm)") {
+    const matched = FALLBACK_CATALOG_VIDEOS.filter(v => 
+      v.category.toLowerCase() === cat.toLowerCase() ||
+      v.category.toLowerCase().includes(cat.toLowerCase())
+    );
+    if (matched.length > 0) {
+      pool = matched;
+    }
+  }
+
+  // Calculate deterministic offset using seed and page
+  const numericSeed = Math.abs(seed.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) || 42);
+  const offset = ((page - 1) * 6 + numericSeed) % pool.length;
+
+  const result: CuratedVideoItem[] = [];
+  for (let i = 0; i < Math.min(18, pool.length); i++) {
+    const item = pool[(offset + i) % pool.length];
+    result.push({
+      ...item,
+      category: cat === "All" || !cat ? "Trending" : cat
+    });
+  }
+  return result;
+}
 
 // YouTube Algorithmic Home Feed Endpoint (Pulls real live videos across categories with exact avatars)
 app.get("/api/youtube/feed", async (req, res) => {
@@ -773,20 +1216,27 @@ app.get("/api/youtube/feed", async (req, res) => {
         "Accept-Language": "en-US,en;q=0.9",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
       },
-      signal: AbortSignal.timeout(6500)
+      signal: AbortSignal.timeout(9500)
     });
 
     if (!ytRes.ok) {
       if (cached && cached.videos.length > 0) {
         return res.json({ ok: true, source: "stale_cache", category, videos: cached.videos });
       }
-      return res.json({ ok: false, error: "Upstream error", videos: [] });
+      const fallback = getFallbackFeedVideos(category, page, querySeed);
+      feedCache.set(cacheKey, { timestamp: Date.now(), videos: fallback });
+      return res.json({ ok: true, source: "fallback_curated", category, count: fallback.length, videos: fallback });
     }
 
     const html = await ytRes.text();
     const match = html.match(/ytInitialData\s*=\s*({.+?});<\/script>/);
     if (!match) {
-      return res.json({ ok: false, error: "Parse error", videos: [] });
+      if (cached && cached.videos.length > 0) {
+        return res.json({ ok: true, source: "stale_cache", category, videos: cached.videos });
+      }
+      const fallback = getFallbackFeedVideos(category, page, querySeed);
+      feedCache.set(cacheKey, { timestamp: Date.now(), videos: fallback });
+      return res.json({ ok: true, source: "fallback_curated", category, count: fallback.length, videos: fallback });
     }
 
     const data = JSON.parse(match[1]);
@@ -864,17 +1314,25 @@ app.get("/api/youtube/feed", async (req, res) => {
       if (videos.length >= 36) break;
     }
 
-    if (videos.length > 0) {
-      feedCache.set(cacheKey, { timestamp: Date.now(), videos });
+    if (videos.length === 0) {
+      if (cached && cached.videos.length > 0) {
+        return res.json({ ok: true, source: "stale_cache", category, videos: cached.videos });
+      }
+      const fallback = getFallbackFeedVideos(category, page, querySeed);
+      feedCache.set(cacheKey, { timestamp: Date.now(), videos: fallback });
+      return res.json({ ok: true, source: "fallback_curated", category, count: fallback.length, videos: fallback });
     }
 
+    feedCache.set(cacheKey, { timestamp: Date.now(), videos });
     res.json({ ok: true, count: videos.length, category, videos });
   } catch (err: any) {
-    console.error("YouTube feed fetch error:", err.message);
+    console.warn("YouTube feed notice, serving resilient fallback:", err?.message || err);
     if (cached && cached.videos.length > 0) {
       return res.json({ ok: true, source: "fallback_cache", category, videos: cached.videos });
     }
-    res.json({ ok: false, error: err.message, videos: [] });
+    const fallback = getFallbackFeedVideos(category, page, querySeed);
+    feedCache.set(cacheKey, { timestamp: Date.now(), videos: fallback });
+    res.json({ ok: true, source: "fallback_curated", category, count: fallback.length, videos: fallback });
   }
 });
 

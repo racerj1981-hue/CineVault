@@ -251,18 +251,21 @@ export function loadOfflineVideos() {
     const raw = localStorage.getItem(OFFLINE_VIDEOS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.filter((v) => v && v.id && v.available !== false);
+      }
     }
   } catch (e) {
     console.warn('[Offline] Failed to load offline videos:', e);
   }
-  return PRESEEDED_OFFLINE_VIDEOS;
+  return PRESEEDED_OFFLINE_VIDEOS.filter((v) => v && v.id && v.available !== false);
 }
 
 export function saveOfflineVideos(videos) {
   try {
-    localStorage.setItem(OFFLINE_VIDEOS_KEY, JSON.stringify(videos));
-    window.dispatchEvent(new CustomEvent('cinevault_offline_videos_updated', { detail: { count: videos.length } }));
+    const validOnly = (videos || []).filter((v) => v && v.id && v.available !== false);
+    localStorage.setItem(OFFLINE_VIDEOS_KEY, JSON.stringify(validOnly));
+    window.dispatchEvent(new CustomEvent('cinevault_offline_videos_updated', { detail: { count: validOnly.length } }));
   } catch (e) {
     console.warn('[Offline] Failed to save offline videos:', e);
   }
@@ -271,11 +274,11 @@ export function saveOfflineVideos(videos) {
 export function isVideoSavedOffline(videoId) {
   if (!videoId) return false;
   const list = loadOfflineVideos();
-  return list.some((v) => v.id === videoId);
+  return list.some((v) => v.id === videoId && v.available !== false);
 }
 
 export function toggleSaveVideoOffline(video) {
-  if (!video || !video.id) return false;
+  if (!video || !video.id || video.available === false) return false;
   const list = loadOfflineVideos();
   const exists = list.some((v) => v.id === video.id);
 
@@ -290,7 +293,7 @@ export function toggleSaveVideoOffline(video) {
       offlineSize: `${Math.floor(Math.random() * 35 + 20)} MB`,
       cachedAt: new Date().toLocaleDateString()
     };
-    updated = [offlineVideo, ...list];
+    updated = [offlineVideo, ...list].filter((v) => v && v.id && v.available !== false);
   }
 
   saveOfflineVideos(updated);

@@ -50,7 +50,7 @@ export const YouTubeSearchPage = ({
       if (Array.isArray(nextBatch) && nextBatch.length > 0) {
         setDisplayResults((prev) => {
           const seen = new Set(prev.map((item) => item.id));
-          const fresh = nextBatch.filter((item) => !seen.has(item.id));
+          const fresh = nextBatch.filter((item) => item && item.id && item.available !== false && !seen.has(item.id));
           return [...prev, ...fresh];
         });
         setPage(nextPage);

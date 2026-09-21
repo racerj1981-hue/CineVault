@@ -1,5 +1,6 @@
 // Pure Unblocked Movies Catalog (Games completely removed)
 // Compatible with Linwize School Web Filters with Embed Streams
+import { resolveAssetUrl } from '../utils/assetHelper';
 
 export const DEFAULT_MEDIA_ITEMS = [
   {
@@ -11,7 +12,7 @@ export const DEFAULT_MEDIA_ITEMS = [
     duration: "84 min",
     rating: "6.4/10",
     description: "Tom and Jerry set aside their classic rivalry to help a runaway orphan girl named Robyn Starling escape her cruel, greedy guardian Aunt Figg and reunite with her lost father in this beloved theatrical animated adventure.",
-    thumbnail: "/posters/tom_and_jerry.png",
+    thumbnail: resolveAssetUrl("posters/tom_and_jerry.png"),
     iframe: '<iframe src="https://archive.org/embed/tom-and-jerry-the-movie-1992_202206" width="100%" height="100%" frameborder="0" allowfullscreen="true" allow="autoplay; fullscreen"></iframe>',
     iframeUrl: "https://archive.org/embed/tom-and-jerry-the-movie-1992_202206",
     streamUrl: "https://archive.org/download/tom-and-jerry-the-movie-1992_202206/Tom%20and%20Jerry%20-%20The%20Movie%20%5B1992%5D.mp4",
@@ -29,7 +30,7 @@ export const DEFAULT_MEDIA_ITEMS = [
     duration: "75 min",
     rating: "6.6/10",
     description: "After demolishing their house in an epic pursuit, Tom and Jerry sign up for 'The Super Race'—a high-stakes reality TV worldwide automobile race—competing in custom souped-up supercars to win a magnificent dream mansion.",
-    thumbnail: "/posters/tom_and_jerry_fast_and_furry.jpg",
+    thumbnail: resolveAssetUrl("posters/tom_and_jerry_fast_and_furry.jpg"),
     iframe: '<iframe src="https://archive.org/embed/tom-and-jerry-the-fast-and-the-furry-2005-1080p-brrip-a-release-lounge-h-264" width="100%" height="100%" frameborder="0" allowfullscreen="true" allow="autoplay; fullscreen"></iframe>',
     iframeUrl: "https://archive.org/embed/tom-and-jerry-the-fast-and-the-furry-2005-1080p-brrip-a-release-lounge-h-264",
     streamUrl: "https://archive.org/download/tom-and-jerry-the-fast-and-the-furry-2005-1080p-brrip-a-release-lounge-h-264/Tom%20and%20Jerry%20The%20Fast%20and%20the%20Furry%202005%201080p%20BRRip%20%5BA%20Release-Lounge%20H264%5D.mp4",
