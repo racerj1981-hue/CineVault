@@ -18,7 +18,7 @@ import {
   User,
   HardDriveDownload
 } from 'lucide-react';
-import { extractYouTubeId, getChannelAvatar } from '../../data/youtubeData';
+import { extractYouTubeId, getChannelAvatar, getFallbackAvatarDataUri } from '../../data/youtubeData';
 import { YouTubeLogo } from '../YouTubeLogo';
 
 const POPULAR_SUGGESTIONS = [
@@ -125,6 +125,10 @@ export const YouTubeWebHeader = ({
               src={getChannelAvatar(activeVideo.channel, activeVideo)}
               alt={activeVideo.channel || 'Video Profile'}
               className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover ring-1 ring-zinc-700/80 group-hover/profile:ring-rose-500 transition shrink-0 shadow-xs"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = getFallbackAvatarDataUri(activeVideo.channel || 'YT');
+              }}
             />
             <div className="hidden md:flex flex-col min-w-0 max-w-[120px] lg:max-w-[180px]">
               <span className="text-xs font-bold text-white group-hover/profile:text-rose-400 transition truncate leading-tight">

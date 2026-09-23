@@ -26,7 +26,7 @@ import {
   AlertCircle,
   Home
 } from 'lucide-react';
-import { YOUTUBE_PROXY_NODES, getVideoThumbnail, getChannelAvatar, checkYouTubeVideoAvailability } from '../../data/youtubeData';
+import { YOUTUBE_PROXY_NODES, getVideoThumbnail, getChannelAvatar, getFallbackAvatarDataUri, checkYouTubeVideoAvailability } from '../../data/youtubeData';
 import {
   recordWatchEvent,
   recordInteractionEvent,
@@ -52,8 +52,7 @@ export const YouTubeWatchPage = ({
   selectedNodeIndex = 0,
   onSelectNode,
   onAddToQueue,
-  onOpenVideoProfileModal,
-  stealthTitleActive
+  onOpenVideoProfileModal
 }) => {
   const [reloadKey, setReloadKey] = useState(0);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
@@ -394,7 +393,7 @@ export const YouTubeWatchPage = ({
           {/* Video Title & Actions */}
           <div className="mt-4">
             <h1 className="text-lg sm:text-xl font-extrabold text-white tracking-tight leading-snug">
-              {stealthTitleActive ? 'Educational Multimedia Resource' : video.title}
+              {video.title}
             </h1>
 
             {/* Channel Row & Action Buttons */}
@@ -408,7 +407,7 @@ export const YouTubeWatchPage = ({
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
-                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(video.channel || 'YT')}&background=27272a&color=f59e0b&size=160&bold=true`;
+                      e.currentTarget.src = getFallbackAvatarDataUri(video.channel || 'YT');
                     }}
                   />
                 </div>
@@ -689,7 +688,7 @@ export const YouTubeWatchPage = ({
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.currentTarget.onerror = null;
-                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(rec.channel || 'YT')}&background=27272a&color=f59e0b&size=80&bold=true`;
+                              e.currentTarget.src = getFallbackAvatarDataUri(rec.channel || 'YT');
                             }}
                           />
                         </div>

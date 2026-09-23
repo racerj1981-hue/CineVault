@@ -21,7 +21,7 @@ import {
   isVideoSavedOffline,
   toggleSaveVideoOffline
 } from '../../utils/youtubeProfilesAndOffline';
-import { getChannelAvatar, getVideoThumbnail } from '../../data/youtubeData';
+import { getChannelAvatar, getVideoThumbnail, getFallbackAvatarDataUri } from '../../data/youtubeData';
 
 export const VideoProfileModal = ({
   isOpen,
@@ -127,6 +127,10 @@ export const VideoProfileModal = ({
                   src={getChannelAvatar(video.channel, video)}
                   alt={video.channel}
                   className="w-3.5 h-3.5 rounded-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = getFallbackAvatarDataUri(video.channel || 'YT');
+                  }}
                 />
                 <span className="font-semibold text-zinc-300">{video.channel}</span>
                 <span>•</span>

@@ -20,7 +20,6 @@ import {
   LayoutGrid,
   Zap,
   HelpCircle,
-  Eye,
   TrendingUp,
   Music,
   Gamepad2,
@@ -30,17 +29,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { YOUTUBE_PROXY_NODES } from '../../data/youtubeData';
-import { openAboutBlankCloak } from '../../data/youtubeData';
 import { YouTubePlayIcon } from '../YouTubeLogo';
-
-const CLOAK_PRESETS = [
-  { id: 'docs', name: 'Google Docs', icon: '📄', desc: 'Untitled document' },
-  { id: 'drive', name: 'Google Drive', icon: '📁', desc: 'My Drive' },
-  { id: 'classroom', name: 'Google Classroom', icon: '🏫', desc: 'Classes' },
-  { id: 'canvas', name: 'Canvas LMS', icon: '📚', desc: 'Dashboard' },
-  { id: 'desmos', name: 'Desmos', icon: '📐', desc: 'Graphing Calculator' },
-  { id: 'wikipedia', name: 'Wikipedia', icon: '🌐', desc: 'Encyclopedia' }
-];
 
 export const BrowserChrome = ({
   tabs,
@@ -62,18 +51,10 @@ export const BrowserChrome = ({
   onToggleViewMode,
   isBrowserFullscreen,
   onToggleFullscreen,
-  onTriggerCloak,
-  savedCloakPreset = 'docs',
-  stealthTitleActive,
-  onToggleStealthTitle,
-  activeVideoId,
-  embedUrl
 }) => {
   const [omniboxValue, setOmniboxValue] = useState(currentUrl || 'https://www.youtube.com');
   const [isFocused, setIsFocused] = useState(false);
   const [showNodeMenu, setShowNodeMenu] = useState(false);
-  const [showCloakMenu, setShowCloakMenu] = useState(false);
-  const [selectedCloak, setSelectedCloak] = useState(savedCloakPreset);
 
   // Sync omnibox with currentUrl when it changes externally
   useEffect(() => {
@@ -98,8 +79,7 @@ export const BrowserChrome = ({
         {/* macOS Style Window Dots */}
         <div className="flex items-center gap-1.5 mr-2 shrink-0">
           <div
-            onClick={onTriggerCloak}
-            title="Close / Panic Disguise"
+            title="Window Close"
             className="w-3 h-3 rounded-full bg-rose-500/80 hover:bg-rose-500 cursor-pointer transition shadow-xs"
           />
           <div
@@ -137,7 +117,7 @@ export const BrowserChrome = ({
 
                 {/* Tab Title */}
                 <span className="truncate text-xs">
-                  {stealthTitleActive ? 'Educational Document' : tab.title || 'YouTube'}
+                  {tab.title || 'YouTube'}
                 </span>
 
                 {/* Close Tab Button */}
@@ -169,20 +149,6 @@ export const BrowserChrome = ({
 
         {/* Quick Browser Actions */}
         <div className="flex items-center gap-1 shrink-0">
-          {/* Stealth Tab Cloak Toggle */}
-          <button
-            onClick={onToggleStealthTitle}
-            title="Toggle stealth camouflage for this tab"
-            className={`px-2 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer flex items-center gap-1 ${
-              stealthTitleActive
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-            }`}
-          >
-            <Eye className="w-3 h-3" />
-            <span className="hidden md:inline">{stealthTitleActive ? 'Stealth ON' : 'Stealth'}</span>
-          </button>
-
           {/* Fullscreen Browser Toggle */}
           <button
             onClick={onToggleFullscreen}
@@ -326,56 +292,6 @@ export const BrowserChrome = ({
             <Tv className="w-3 h-3" />
             <span className="hidden sm:inline">Live Mirror</span>
           </button>
-        </div>
-
-        {/* Cloaked About:Blank Window Launcher */}
-        <div className="relative shrink-0">
-          <div className="flex items-center rounded-xl bg-indigo-600/20 border border-indigo-500/40 overflow-hidden">
-            <button
-              onClick={() => openAboutBlankCloak(activeVideoId, embedUrl, selectedCloak)}
-              title={`Open unblocked player in an invisible about:blank window disguised as ${selectedCloak}`}
-              className="flex items-center gap-1.5 px-2.5 py-1 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold transition cursor-pointer"
-            >
-              <ExternalLink className="w-3 h-3" />
-              <span className="hidden lg:inline">Cloak Tab</span>
-            </button>
-            <button
-              onClick={() => setShowCloakMenu(!showCloakMenu)}
-              title="Disguise options (Docs, Drive, Classroom, Canvas, Desmos)"
-              className="px-1.5 py-1 hover:bg-indigo-600/40 text-indigo-300 border-l border-indigo-500/30 cursor-pointer"
-            >
-              <ChevronDown className="w-2.5 h-2.5" />
-            </button>
-          </div>
-
-          {showCloakMenu && (
-            <div className="absolute right-0 top-full mt-1.5 w-52 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl p-1.5 z-50 space-y-1">
-              <div className="px-2 py-1 text-[10px] uppercase font-bold text-zinc-500">
-                Stealth Disguise:
-              </div>
-              {CLOAK_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => {
-                    setSelectedCloak(preset.id);
-                    setShowCloakMenu(false);
-                    openAboutBlankCloak(activeVideoId, embedUrl, preset.id);
-                  }}
-                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer ${
-                    selectedCloak === preset.id
-                      ? 'bg-indigo-500/30 text-indigo-200 font-bold'
-                      : 'text-zinc-300 hover:bg-zinc-800'
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span>{preset.icon}</span>
-                    <span>{preset.name}</span>
-                  </span>
-                  {selectedCloak === preset.id && <Check className="w-3 h-3 text-indigo-400" />}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

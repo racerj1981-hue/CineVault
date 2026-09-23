@@ -23,7 +23,6 @@ export const PlayerView = ({
   onSelectPrev,
   isFavorite,
   onToggleFavorite,
-  onTriggerCloak,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
@@ -50,10 +49,20 @@ export const PlayerView = ({
   // Dynamic Archive.org stream resolver state for movies without pre-set streamUrl
   const [resolvedStreamUrl, setResolvedStreamUrl] = useState(item?.streamUrl || item?.directStreamUrl || '');
   const [isResolving, setIsResolving] = useState(false);
+  const [streamAttempt, setStreamAttempt] = useState(0);
+
+  // Streaming node state: default to 'direct' on static hosts (GitHub Pages) or 'relay' on full-stack
+  const [streamNode, setStreamNode] = useState(() => (isStaticHost() ? 'direct' : 'relay')); // 'relay' | 'direct' | 'cors'
 
   useEffect(() => {
+    setStreamNode(isStaticHost() ? 'direct' : 'relay');
+    setStreamAttempt(0);
+    setResolvedStreamUrl(item?.streamUrl || item?.directStreamUrl || '');
+    setStreamError(false);
+    setIsVideoLoading(true);
+    setIsIframeLoading(true);
+
     if (item?.streamUrl) {
-      setResolvedStreamUrl(item.streamUrl);
       return;
     }
     const match = (item?.archiveId || iframeSrc || '').match(/archive\.org\/(?:embed|details|download)\/([a-zA-Z0-9._-]+)/) ||
@@ -75,32 +84,25 @@ export const PlayerView = ({
 
   // Extract direct stream candidate URL if available
   const extractDirectCandidate = (mediaItem, src) => {
-    if (resolvedStreamUrl) return resolvedStreamUrl;
     if (mediaItem?.streamUrl) return mediaItem.streamUrl;
     if (mediaItem?.directStreamUrl) return mediaItem.directStreamUrl;
+    if (resolvedStreamUrl) return resolvedStreamUrl;
     if (isDirectMediaUrl(src)) return src;
-    const archiveMatch = src.match(/archive\.org\/embed\/([a-zA-Z0-9._-]+)/);
-    if (archiveMatch) {
-      return `https://archive.org/download/${archiveMatch[1]}/${archiveMatch[1]}.mp4`;
-    }
     return null;
   };
 
   const rawCandidate = extractDirectCandidate(item, iframeSrc);
   
   // Linwize Cloud Relay URL: routes media stream through local Cloud Run origin with Byte Range support
-  const linwizeRelayUrl = rawCandidate
-    ? `/api/proxy/stream?url=${encodeURIComponent(rawCandidate)}`
-    : (item?.archiveId ? `/api/movie/stream/${encodeURIComponent(item.archiveId)}` : '');
-
-  // Streaming node state: default to 'direct' on static hosts (GitHub Pages) or 'relay' on full-stack
-  const [streamNode, setStreamNode] = useState(() => (isStaticHost() ? 'direct' : 'relay')); // 'relay' | 'direct' | 'cors'
+  const linwizeRelayUrl = item?.archiveId
+    ? `/api/movie/stream/${encodeURIComponent(item.archiveId)}${rawCandidate ? `?url=${encodeURIComponent(rawCandidate)}` : ''}`
+    : (rawCandidate ? `/api/proxy/stream?url=${encodeURIComponent(rawCandidate)}` : '');
 
   const activeStreamUrl = (streamNode === 'relay' && linwizeRelayUrl)
     ? linwizeRelayUrl
     : (streamNode === 'cors' && rawCandidate)
     ? `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawCandidate)}`
-    : (rawCandidate || resolvedStreamUrl);
+    : (rawCandidate || resolvedStreamUrl || linwizeRelayUrl);
 
   const isDirectCandidate = !!(rawCandidate || resolvedStreamUrl || linwizeRelayUrl);
 
@@ -154,31 +156,6 @@ export const PlayerView = ({
   // Reload handler
   const handleReload = () => {
     setReloadKey((prev) => prev + 1);
-  };
-
-  const handleOpenCloakedPlayer = () => {
-    const win = window.open('about:blank', '_blank');
-    if (win) {
-      win.document.title = "Google Drive - My Drive";
-      const link = win.document.createElement('link');
-      link.rel = 'icon';
-      link.href = 'https://ssl.gstatic.com/docs/doclist/images/drive_2022q3_32dp.png';
-      win.document.head.appendChild(link);
-      win.document.body.style.margin = '0';
-      win.document.body.style.height = '100vh';
-      win.document.body.style.background = '#000';
-      const playerUrl = item.archiveId
-        ? `/api/movie/player/${encodeURIComponent(item.archiveId)}`
-        : (linwizeRelayUrl || activeStreamUrl);
-      const frame = win.document.createElement('iframe');
-      frame.style.width = '100%';
-      frame.style.height = '100%';
-      frame.style.border = 'none';
-      frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen';
-      frame.allowFullscreen = true;
-      frame.src = playerUrl;
-      win.document.body.appendChild(frame);
-    }
   };
 
   return (
@@ -253,12 +230,13 @@ export const PlayerView = ({
               )}
 
               {/* Linwize Relay Toggle */}
-              {playbackMode === 'direct' && linwizeRelayUrl && (
+              {playbackMode === 'direct' && (linwizeRelayUrl || rawCandidate) && (
                 <button
                   type="button"
                   onClick={() => {
                     const next = streamNode === 'relay' ? 'direct' : 'relay';
                     setStreamNode(next);
+                    setStreamAttempt(prev => prev + 1);
                     setStreamError(false);
                     setIsVideoLoading(true);
                   }}
@@ -272,16 +250,6 @@ export const PlayerView = ({
                   <span>{streamNode === 'relay' ? '🛡️ Linwize Relay' : '⚡ Direct Origin'}</span>
                 </button>
               )}
-
-              {/* Cloaked Tab Button */}
-              <button
-                id="cloak-tab-btn"
-                onClick={handleOpenCloakedPlayer}
-                title="Watch Movie in Stealth about:blank Tab disguised as Google Drive"
-                className="px-2.5 py-1 bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/50 text-indigo-200 hover:text-white rounded-lg text-[11px] font-semibold transition cursor-pointer flex items-center gap-1"
-              >
-                <span>🕶️ Cloaked Tab</span>
-              </button>
 
               {/* Favorite Toggle Button (Icon Only) */}
               <button
@@ -405,7 +373,7 @@ export const PlayerView = ({
             {playbackMode === 'direct' && activeStreamUrl ? (
               <div className="w-full h-full relative flex items-center justify-center bg-black">
                 <video
-                  key={`video-${item.id}-${reloadKey}`}
+                  key={`video-${item.id}-${streamNode}-${streamAttempt}-${reloadKey}`}
                   src={activeStreamUrl}
                   controls
                   autoPlay
@@ -418,9 +386,19 @@ export const PlayerView = ({
                   onCanPlay={() => setIsVideoLoading(false)}
                   onPlaying={() => setIsVideoLoading(false)}
                   onError={() => {
+                    // Try direct origin if relay fails
                     if (streamNode === 'relay' && rawCandidate) {
-                      console.warn('Relay stream unavailable, auto-switching to direct stream');
                       setStreamNode('direct');
+                      setStreamAttempt((prev) => prev + 1);
+                      setIsVideoLoading(true);
+                      return;
+                    }
+                    // Auto-fallback to official embed player so movies never crash
+                    if (iframeSrc && playbackMode === 'direct') {
+                      setPlaybackMode('embed');
+                      setIsIframeLoading(true);
+                      setIsVideoLoading(false);
+                      setStreamError(false);
                       return;
                     }
                     setIsVideoLoading(false);

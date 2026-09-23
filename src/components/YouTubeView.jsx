@@ -23,7 +23,6 @@ import {
   DEFAULT_YOUTUBE_VIDEOS,
   extractYouTubeId,
   testYouTubeNodes,
-  openAboutBlankCloak,
   fetchYouTubeSearch,
   getVideoThumbnail,
   fetchYouTubeFeed,
@@ -35,7 +34,6 @@ import {
   recordInteractionEvent,
   loadAlgoProfile
 } from '../utils/youtubeAlgorithm';
-import { applyTabCloak, resetTabCloak } from '../utils/cloaker';
 import {
   loadUserProfiles,
   getActiveProfileId,
@@ -58,10 +56,7 @@ import { UserProfileManagerModal } from './YouTubeBrowser/UserProfileManagerModa
 import { VideoProfileModal } from './YouTubeBrowser/VideoProfileModal';
 import { YouTubePlayIcon } from './YouTubeLogo';
 
-export const YouTubeView = ({
-  onTriggerCloak,
-  savedCloakPreset = 'docs'
-}) => {
+export const YouTubeView = () => {
   // Catalog of base & cached videos
   const [videos, setVideos] = useState(() => {
     try {
@@ -115,9 +110,6 @@ export const YouTubeView = ({
 
   // Global Bypass Node Index
   const [selectedNodeIndex, setSelectedNodeIndex] = useState(0);
-
-  // Stealth & Camouflage
-  const [stealthTitleActive, setStealthTitleActive] = useState(false);
 
   // Browser Fullscreen mode
   const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
@@ -193,18 +185,6 @@ export const YouTubeView = ({
       window.removeEventListener('cinevault_video_profile_updated', handleVideoProfileUpdated);
     };
   }, []);
-
-  // Stealth Title Effect
-  useEffect(() => {
-    if (stealthTitleActive) {
-      applyTabCloak(savedCloakPreset || 'docs');
-    }
-    return () => {
-      if (stealthTitleActive) {
-        resetTabCloak();
-      }
-    };
-  }, [stealthTitleActive, savedCloakPreset]);
 
   // Preload authentic YouTube feed into videos state
   useEffect(() => {
@@ -710,16 +690,6 @@ export const YouTubeView = ({
         onToggleViewMode={(mode) => updateTab(activeTab.id, { viewMode: mode })}
         isBrowserFullscreen={isBrowserFullscreen}
         onToggleFullscreen={() => setIsBrowserFullscreen(!isBrowserFullscreen)}
-        onTriggerCloak={onTriggerCloak}
-        savedCloakPreset={savedCloakPreset}
-        stealthTitleActive={stealthTitleActive}
-        onToggleStealthTitle={() => setStealthTitleActive(!stealthTitleActive)}
-        activeVideoId={activeTab.activeVideo?.id || 'aqz-KE-bpKQ'}
-        embedUrl={
-          typeof currentNode.formatUrl === 'function'
-            ? currentNode.formatUrl(activeTab.activeVideo?.id || 'aqz-KE-bpKQ')
-            : `https://www.youtube.com/embed/${activeTab.activeVideo?.id || 'aqz-KE-bpKQ'}`
-        }
       />
 
       {/* 2. In-Browser Web Application Window */}
@@ -795,7 +765,6 @@ export const YouTubeView = ({
               selectedNodeIndex={selectedNodeIndex}
               onSelectNode={setSelectedNodeIndex}
               onAddToQueue={handleAddToQueue}
-              stealthTitleActive={stealthTitleActive}
               onOpenVideoProfileModal={(v) => setVideoProfileModalTarget(v)}
             />
           ) : activeTab.searchQuery ? (
@@ -1089,7 +1058,7 @@ export const YouTubeView = ({
                 { key: 'Ctrl/Cmd + W', action: 'Close Current Tab' },
                 { key: 'F', action: 'Toggle Fullscreen Browser Mode' },
                 { key: 'D', action: 'Run Bypass Node Latency Diagnostics' },
-                { key: 'ESC or `', action: 'Instant Panic Camouflage Screen' }
+                { key: 'P', action: 'Open Profiles & Saved Vault' }
               ].map((sc) => (
                 <div
                   key={sc.key}

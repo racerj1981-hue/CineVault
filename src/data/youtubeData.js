@@ -62,7 +62,7 @@ export const YOUTUBE_PROXY_NODES = [
     name: 'Node 6 (⚡ Advanced Proxy Player)',
     location: 'Integrated Multi-Mirror Relay',
     badge: 'Multi-Mirror Failover',
-    description: 'Custom unblocked player interface with in-screen mirror switching, stealth disguises, and keyboard shortcuts.',
+    description: 'Custom unblocked player interface with in-screen mirror switching and keyboard shortcuts.',
     formatUrl: (id, opts = {}) => {
       let url = `/api/youtube/proxy-player/${id}?engine=nocookie`;
       if (opts.startTime) url += `&start=${opts.startTime}`;
@@ -330,7 +330,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'kJQP7kiw5Fk',
     title: 'Luis Fonsi - Despacito ft. Daddy Yankee',
     channel: 'Luis Fonsi',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_n0k541yG0e9Zl4r4qK0pT1g_aM2_l=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/ia2BN5pgqtFZ79o-HmDrTZAZ3tATeNeUwx74ys7w4HMm7NLKX_tMFtLhOCPAiyOWTMrDoSapuQ=s176-c-k-c0x00ffffff-no-rj',
     category: 'Music & Lofi',
     views: '8.4B views',
     duration: '4:41',
@@ -341,7 +341,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'fJ9rUzIMcZQ',
     title: 'Queen – Bohemian Rhapsody (Official Video Remastered)',
     channel: 'Queen Official',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_ljzK9zV7wA0s8jQ2_x9w1mE2_q=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/MiFTTCMl22bQ46F91rXFVhZ7PnBfLujsRWNxMik7NKVRDRBc-uBE7fba_3r9vTN39JvfRmh8nVU=s176-c-k-c0x00ffffff-no-rj',
     category: 'Music & Lofi',
     views: '1.7B views',
     duration: '5:59',
@@ -352,7 +352,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'lp-EO5I60KA',
     title: 'The Weeknd - Blinding Lights (Official Music Video)',
     channel: 'The Weeknd',
-    channelAvatar: 'https://yt3.googleusercontent.com/eN19qF9rGZ1p2hY_e3hB2_x7j9=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/pZQ5JMD4EOI8TcNYAPTzMexe_fC0CKnb_hYlV4rPfIzmDidF239fH1XKmzkeT30XSg7fxNwc_w=s176-c-k-c0x00ffffff-no-rj',
     category: 'Music & Lofi',
     views: '920M views',
     duration: '4:20',
@@ -363,7 +363,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'ALZHF5UqnU4',
     title: 'Marshmello ft. Bastille - Happier (Official Music Video)',
     channel: 'Marshmello',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_k2P9xV4qL9w_1m=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/_GYRbg3_acyrsmJbhqHV15sM-Z75gAHqV1uFXXkxIPdsauNqFBXpaXsn6OlwGNGBSm4gu8tYKvY=s176-c-k-c0x00ffffff-no-rj',
     category: 'Music & Lofi',
     views: '1.2B views',
     duration: '3:53',
@@ -374,7 +374,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'QdBZY2fkU-0',
     title: 'Grand Theft Auto VI Trailer 1 (Official 4K)',
     channel: 'Rockstar Games',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_n2V7mK0pT1g_x8=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/f0PgbUq0tAdrt_rQxprZdPfgg96y54Ge-LCagXvPzc6gnMiw42w-J-wAZ2n-TfXgB3ASkxk2=s176-c-k-c0x00ffffff-no-rj',
     category: 'Gaming',
     views: '230M views',
     duration: '1:31',
@@ -385,7 +385,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'M_XwzBMTJaM',
     title: 'Minecraft: Tricky Trials Update – Official Trailer',
     channel: 'Minecraft',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nzY8qK1p=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/5ixR10JivFjRX1kTO30sTY5se8Nt4SMmGH5uRIRZwLyA1JJaEPcQJMyQHqygozoo1kmiQKcBJw=s176-c-k-c0x00ffffff-no-rj',
     category: 'Gaming',
     views: '18M views',
     duration: '2:15',
@@ -396,7 +396,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'MmB9b5njVbA',
     title: 'I Survived 100 Days in Hardcore Minecraft...',
     channel: 'Luke TheNotable',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m9P2qX0p=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/vahZmaosZ4sZURgpEpMYRNSNhkoB6YUNOa5JemtTGb4DxC_VcZ50fpBhhlOrcm2bRYA91mqlUQ=s176-c-k-c0x00ffffff-no-rj',
     category: 'Gaming',
     views: '35M views',
     duration: '38:12',
@@ -407,7 +407,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: '1HCrV7mFWr8',
     title: 'Minecraft: Wilderness Bound – Official World Trailer',
     channel: 'Minecraft',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nzY8qK1p=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/5ixR10JivFjRX1kTO30sTY5se8Nt4SMmGH5uRIRZwLyA1JJaEPcQJMyQHqygozoo1kmiQKcBJw=s176-c-k-c0x00ffffff-no-rj',
     category: 'Gaming',
     views: '22M views',
     duration: '2:45',
@@ -418,7 +418,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'cqYefPrvEhI',
     title: 'The Lore of Elden Ring\'s Cosmic Sorcerers',
     channel: 'VaatiVidya',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_l9Q2q=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/b7qVCasKUx-jmNipWOcHz6kJK5L9iPEfhYK2IHOKCjDM46Z3bNUXn3DSWiNNpt8Sx130dyDISko=s176-c-k-c0x00ffffff-no-rj',
     category: 'Gaming',
     views: '5.2M views',
     duration: '34:20',
@@ -473,7 +473,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'uD4izuDMUQA',
     title: 'TIMELAPSE OF THE FUTURE: A Journey to the End of Time (4K)',
     channel: 'melodysheep',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m9P2q=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/ytc/AIdro_klHVaP6_ZcnT8VyPFedRHgJOPOym_tLSxoFCL0KJSZL1k=s176-c-k-c0x00ffffff-no-rj',
     category: 'Science & Tech',
     views: '105M views',
     duration: '29:21',
@@ -495,7 +495,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'HeQX2HjkcNo',
     title: 'The Infinite Hotel Paradox – Jeff Dekofsky',
     channel: 'TED-Ed',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_koIFcCOrvh0KThLNOiazAIDu6hcs8bjkGNwe1f6A_OYm8=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/7vCbvtCqtjQ3YLgsJt7Y952MQV1sBvhllSCSxHP8_sVZdcPCBrITfhkN2RdyCuwPnsByq-1GoA=s176-c-k-c0x00ffffff-no-rj',
     category: 'Education',
     views: '24M views',
     duration: '5:59',
@@ -506,7 +506,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'OmJ-4B-mS-Y',
     title: 'The Map of Mathematics',
     channel: 'Domain of Science',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nFzZFPLxPZRHcE3SSwzdrbuWqfoWYwLAu0_2iO6blQYAU=s176-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/qrwWz-16J8HPWPPgLD8FXYdHSUHFW-yeBNUXTzDKjgY3-MsIpPzoBasolfqLdVzGs5kepKfdfA=s176-c-k-c0x00ffffff-no-rj',
     category: 'Education',
     views: '19M views',
     duration: '11:06',
@@ -517,7 +517,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'p7HKvqRI_Bo',
     title: 'How does the stock market work? - Oliver Elfenbaum',
     channel: 'TED-Ed',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_koIFcCOrvh0KThLNOiazAIDu6hcs8bjkGNwe1f6A_OYm8=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/7vCbvtCqtjQ3YLgsJt7Y952MQV1sBvhllSCSxHP8_sVZdcPCBrITfhkN2RdyCuwPnsByq-1GoA=s176-c-k-c0x00ffffff-no-rj',
     category: 'Education',
     views: '13M views',
     duration: '4:30',
@@ -539,7 +539,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'r9PeYPHdpNo',
     title: 'Our Planet | Coastal Seas | FULL EPISODE | Netflix',
     channel: 'Netflix',
-    channelAvatar: 'https://yt3.googleusercontent.com/ZJXeYEqiW-S6m2aq4Od06PhnzX-mub-BhhFADsAirgfljCE3rrPm46_FRZCc0IaGgEu78z9KUlU=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/3b73AYEMMfa3SX5KJMeygio9smTPvrPrpicuQZbfQ_2DN7dV_ApiRM4CdYjSprEy1YYvt_9b=s176-c-k-c0x00ffffff-no-rj',
     category: 'Documentaries',
     views: '31M views',
     duration: '49:15',
@@ -550,7 +550,7 @@ export const DEFAULT_YOUTUBE_VIDEOS = [
     id: 'ZC0DxdjTjT8',
     title: 'Inside the Marianas Trench: Earth\'s Deepest Point',
     channel: 'HISTORY',
-    channelAvatar: 'https://yt3.googleusercontent.com/-FOFg8o1y4dAHDB2MvhORHnLMOaaOKnaNUNsrU-U57Eac6gjB5VO8sYJQC1KkULGQvKP2XpArA=s160-c-k-c0x00ffffff-no-rj',
+    channelAvatar: 'https://yt3.ggpht.com/PuK25BOIG4MnfQL68iXXMaI_AbJ1vACxdE_seCkpTeD3hftaEOhdl-i0LYBBoWelxWUZNvWi=s176-c-k-c0x00ffffff-no-rj',
     category: 'Documentaries',
     views: '14M views',
     duration: '45:10',
@@ -671,66 +671,10 @@ export function extractYouTubeId(input) {
   return videoId;
 }
 
-// Open video in stealth about:blank window disguised as Google Docs, Classroom, Canvas, or Drive
-export function openAboutBlankCloak(videoId, mirrorUrl, preset = 'docs') {
+// Open video in a clean external player window
+export function openExternalPlayerWindow(videoId, mirrorUrl) {
   const finalUrl = mirrorUrl || `/api/youtube/embed/${videoId}?mirror=0`;
-  
-  const presets = {
-    docs: {
-      title: 'Google Docs - Untitled document',
-      icon: 'https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico'
-    },
-    drive: {
-      title: 'Google Drive - My Drive',
-      icon: 'https://ssl.gstatic.com/docs/doclist/images/drive_2022q3_32dp.png'
-    },
-    classroom: {
-      title: 'Google Classroom',
-      icon: 'https://ssl.gstatic.com/classroom/favicon.png'
-    },
-    canvas: {
-      title: 'Dashboard - Canvas LMS',
-      icon: 'https://du11hjcvx0uqb.cloudfront.net/br/dist/images/favicon-e10d657a73.ico'
-    },
-    desmos: {
-      title: 'Desmos | Graphing Calculator',
-      icon: 'https://www.desmos.com/favicon.ico'
-    },
-    wikipedia: {
-      title: 'Wikipedia, the free encyclopedia',
-      icon: 'https://en.wikipedia.org/static/favicon/wikipedia.ico'
-    }
-  };
-
-  const selected = presets[preset] || presets.docs;
-
-  try {
-    const win = window.open('about:blank', '_blank');
-    if (!win) {
-      window.open(finalUrl, '_blank');
-      return;
-    }
-    win.document.write(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${selected.title}</title>
-  <link rel="icon" href="${selected.icon}" type="image/x-icon">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
-    iframe { width: 100%; height: 100%; border: none; }
-  </style>
-</head>
-<body>
-  <iframe src="${finalUrl}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" allowfullscreen></iframe>
-</body>
-</html>`);
-    win.document.close();
-  } catch {
-    window.open(finalUrl, '_blank');
-  }
+  window.open(finalUrl, '_blank');
 }
 
 // Probe bypass nodes for latency and availability
@@ -813,6 +757,19 @@ export const KNOWN_CHANNEL_AVATARS = {
   'Rick Astley': 'https://yt3.ggpht.com/MOWpaiGJdgN4aKMI-NGQLL4jMVP3aDORlQpOBWooi0GSE2TGt4_9ncyepk1pCh-yWQ795AhPbw=s176-c-k-c0x00ffffff-no-rj',
   'jawed': 'https://yt3.ggpht.com/uI3VE4PVqvCy0xnWLqMJnEzyBUm3T8VHOCp4ee-1RxdHqKXCdUE_qXYQnpf9AfuEoIPactVyDhM=s176-c-k-c0x00ffffff-no-rj',
   'Jacob + Katie Schwarz': 'https://yt3.ggpht.com/cwlOSPsmMDwWYJtb_ple4M_-FtiIXBg_aDl2tm9JzpTscH7MJAa7U-3vVL4w5v47N9h6pR80=s176-c-k-c0x00ffffff-no-rj',
+  'Luis Fonsi': 'https://yt3.ggpht.com/ia2BN5pgqtFZ79o-HmDrTZAZ3tATeNeUwx74ys7w4HMm7NLKX_tMFtLhOCPAiyOWTMrDoSapuQ=s176-c-k-c0x00ffffff-no-rj',
+  'Queen Official': 'https://yt3.ggpht.com/MiFTTCMl22bQ46F91rXFVhZ7PnBfLujsRWNxMik7NKVRDRBc-uBE7fba_3r9vTN39JvfRmh8nVU=s176-c-k-c0x00ffffff-no-rj',
+  'The Weeknd': 'https://yt3.ggpht.com/pZQ5JMD4EOI8TcNYAPTzMexe_fC0CKnb_hYlV4rPfIzmDidF239fH1XKmzkeT30XSg7fxNwc_w=s176-c-k-c0x00ffffff-no-rj',
+  'Marshmello': 'https://yt3.ggpht.com/_GYRbg3_acyrsmJbhqHV15sM-Z75gAHqV1uFXXkxIPdsauNqFBXpaXsn6OlwGNGBSm4gu8tYKvY=s176-c-k-c0x00ffffff-no-rj',
+  'Rockstar Games': 'https://yt3.ggpht.com/f0PgbUq0tAdrt_rQxprZdPfgg96y54Ge-LCagXvPzc6gnMiw42w-J-wAZ2n-TfXgB3ASkxk2=s176-c-k-c0x00ffffff-no-rj',
+  'Minecraft': 'https://yt3.ggpht.com/5ixR10JivFjRX1kTO30sTY5se8Nt4SMmGH5uRIRZwLyA1JJaEPcQJMyQHqygozoo1kmiQKcBJw=s176-c-k-c0x00ffffff-no-rj',
+  'Luke TheNotable': 'https://yt3.ggpht.com/vahZmaosZ4sZURgpEpMYRNSNhkoB6YUNOa5JemtTGb4DxC_VcZ50fpBhhlOrcm2bRYA91mqlUQ=s176-c-k-c0x00ffffff-no-rj',
+  'VaatiVidya': 'https://yt3.ggpht.com/b7qVCasKUx-jmNipWOcHz6kJK5L9iPEfhYK2IHOKCjDM46Z3bNUXn3DSWiNNpt8Sx130dyDISko=s176-c-k-c0x00ffffff-no-rj',
+  'melodysheep': 'https://yt3.ggpht.com/ytc/AIdro_klHVaP6_ZcnT8VyPFedRHgJOPOym_tLSxoFCL0KJSZL1k=s176-c-k-c0x00ffffff-no-rj',
+  'TED-Ed': 'https://yt3.ggpht.com/7vCbvtCqtjQ3YLgsJt7Y952MQV1sBvhllSCSxHP8_sVZdcPCBrITfhkN2RdyCuwPnsByq-1GoA=s176-c-k-c0x00ffffff-no-rj',
+  'Domain of Science': 'https://yt3.ggpht.com/qrwWz-16J8HPWPPgLD8FXYdHSUHFW-yeBNUXTzDKjgY3-MsIpPzoBasolfqLdVzGs5kepKfdfA=s176-c-k-c0x00ffffff-no-rj',
+  'Netflix': 'https://yt3.ggpht.com/3b73AYEMMfa3SX5KJMeygio9smTPvrPrpicuQZbfQ_2DN7dV_ApiRM4CdYjSprEy1YYvt_9b=s176-c-k-c0x00ffffff-no-rj',
+  'HISTORY': 'https://yt3.ggpht.com/PuK25BOIG4MnfQL68iXXMaI_AbJ1vACxdE_seCkpTeD3hftaEOhdl-i0LYBBoWelxWUZNvWi=s176-c-k-c0x00ffffff-no-rj',
   'MKBHD': 'https://yt3.googleusercontent.com/qu4TmIaYUlS41-dJ9gZ7DUR3nilvmB5_11i6OKSdvNnBNiyOusZP1bMN6ICnuxtjFBb6ioKgRQ=s160-c-k-c0x00ffffff-no-rj',
   'Linus Tech Tips': 'https://yt3.googleusercontent.com/gnvYLhXy8FAlPXZ2RTrkrgj-5kyt0vdE2FUGVOiKGdEZIa-wN5A-7nwZBlWJLzUMmoh1NWAU=s160-c-k-c0x00ffffff-no-rj',
   'TED': 'https://yt3.googleusercontent.com/ytc/AIdro_koIFcCOrvh0KThLNOiazAIDu6hcs8bjkGNwe1f6A_OYm8=s160-c-k-c0x00ffffff-no-rj',
@@ -824,6 +781,38 @@ export const KNOWN_CHANNEL_AVATARS = {
   'National Geographic': 'https://yt3.googleusercontent.com/-FOFg8o1y4dAHDB2MvhORHnLMOaaOKnaNUNsrU-U57Eac6gjB5VO8sYJQC1KkULGQvKP2XpArA=s160-c-k-c0x00ffffff-no-rj'
 };
 
+// Generate an instant, vibrant SVG creator profile avatar that requires zero network requests
+export function getFallbackAvatarDataUri(channelName = 'YT') {
+  const clean = (channelName || 'YT').trim();
+  const initials = clean
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0])
+    .join('')
+    .toUpperCase() || 'YT';
+
+  let hash = 0;
+  for (let i = 0; i < clean.length; i++) {
+    hash = (hash << 5) - hash + clean.charCodeAt(i);
+    hash |= 0;
+  }
+  const palettes = [
+    ['#f59e0b', '#b45309'], // amber
+    ['#3b82f6', '#1d4ed8'], // blue
+    ['#10b981', '#047857'], // emerald
+    ['#8b5cf6', '#6d28d9'], // purple
+    ['#ec4899', '#be185d'], // rose
+    ['#06b6d4', '#0e7490'], // cyan
+    ['#f97316', '#c2410c']  // orange
+  ];
+  const [c1, c2] = palettes[Math.abs(hash) % palettes.length];
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs><circle cx="80" cy="80" r="78" fill="url(#g)" stroke="#ffffff" stroke-width="3" stroke-opacity="0.25"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="52" font-weight="800" fill="#ffffff" letter-spacing="1">${initials}</text></svg>`;
+
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 // In-memory runtime cache for dynamically resolved channel avatars
 const dynamicAvatarCache = new Map();
 
@@ -831,9 +820,27 @@ const dynamicAvatarCache = new Map();
 export function getChannelAvatar(channelName, video) {
   const normalized = (channelName || video?.channel || '').trim();
 
-  // 1. Direct explicit avatar attached to video object
+  // 1. Check known official creator avatars first
+  if (normalized) {
+    let knownUrl = KNOWN_CHANNEL_AVATARS[normalized];
+    if (!knownUrl) {
+      const lower = normalized.toLowerCase();
+      for (const [name, url] of Object.entries(KNOWN_CHANNEL_AVATARS)) {
+        if (name.toLowerCase() === lower) {
+          knownUrl = url;
+          break;
+        }
+      }
+    }
+    if (knownUrl) {
+      if (isStaticHost()) return knownUrl;
+      return `/api/youtube/avatar-proxy?url=${encodeURIComponent(knownUrl)}&channel=${encodeURIComponent(normalized)}`;
+    }
+  }
+
+  // 2. Direct explicit avatar attached to video object (if valid)
   const explicitAvatar = video?.channelAvatar || video?.avatar;
-  if (explicitAvatar) {
+  if (explicitAvatar && !explicitAvatar.includes('ytc/AIdro_n0k541y') && !explicitAvatar.includes('ytc/AIdro_ljzK9') && !explicitAvatar.includes('eN19qF9rGZ1p2hY')) {
     if (isStaticHost()) {
       if (explicitAvatar.startsWith('/api/')) {
         const match = explicitAvatar.match(/url=([^&]+)/);
@@ -846,41 +853,22 @@ export function getChannelAvatar(channelName, video) {
       if (explicitAvatar.startsWith('/api/')) return explicitAvatar;
       if (explicitAvatar.startsWith('http://') || explicitAvatar.startsWith('https://') || explicitAvatar.startsWith('//')) {
         const target = explicitAvatar.startsWith('//') ? 'https:' + explicitAvatar : explicitAvatar;
-        return `/api/youtube/avatar-proxy?url=${encodeURIComponent(target)}`;
+        return `/api/youtube/avatar-proxy?url=${encodeURIComponent(target)}&channel=${encodeURIComponent(normalized || 'YT')}`;
       }
       return resolveAssetUrl(explicitAvatar);
     }
   }
 
-  if (!normalized) return `https://ui-avatars.com/api/?name=YT&background=27272a&color=f59e0b&size=160&bold=true`;
+  if (!normalized) return getFallbackAvatarDataUri('YT');
 
-  // 2. Check dynamic cache
+  // 3. Check dynamic runtime cache
   if (dynamicAvatarCache.has(normalized.toLowerCase())) {
     return dynamicAvatarCache.get(normalized.toLowerCase());
   }
 
-  // 3. Known official creator avatar
-  let knownUrl = KNOWN_CHANNEL_AVATARS[normalized];
-  if (!knownUrl) {
-    for (const [name, url] of Object.entries(KNOWN_CHANNEL_AVATARS)) {
-      if (name.toLowerCase() === normalized.toLowerCase()) {
-        knownUrl = url;
-        break;
-      }
-    }
-  }
-
-  if (knownUrl) {
-    // If running on static host (e.g. GitHub Pages), return official CDN directly
-    if (isStaticHost()) {
-      return knownUrl;
-    }
-    return `/api/youtube/avatar-proxy?url=${encodeURIComponent(knownUrl)}`;
-  }
-
   // 4. If on static host (GitHub Pages), return clean UI avatar without attempting /api/
   if (isStaticHost()) {
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(normalized)}&background=27272a&color=f59e0b&size=160&bold=true`;
+    return getFallbackAvatarDataUri(normalized);
   }
 
   // 5. Request dynamic exact avatar from YouTube via backend scraper proxy

@@ -15,9 +15,200 @@ app.use(express.json());
 const streamUrlCache = new Map<string, { url: string; expires: number }>();
 const movieStreamCache = new Map<string, { directUrl: string; fileName: string; title?: string; description?: string; expires: number }>();
 
+// Pre-verified movie streams dictionary for instantaneous 0ms resolution
+const DEFAULT_VERIFIED_MOVIES: Record<string, { directUrl: string; fileName: string; title: string }> = {
+  "tom-and-jerry-the-movie-1992": {
+    directUrl: "https://archive.org/download/tom-and-jerry-the-movie-1992_202206/Tom%20and%20Jerry%20-%20The%20Movie%20%5B1992%5D.mp4",
+    fileName: "Tom and Jerry - The Movie [1992].mp4",
+    title: "Tom and Jerry: The Movie"
+  },
+  "tom-and-jerry-the-movie-1992_202206": {
+    directUrl: "https://archive.org/download/tom-and-jerry-the-movie-1992_202206/Tom%20and%20Jerry%20-%20The%20Movie%20%5B1992%5D.mp4",
+    fileName: "Tom and Jerry - The Movie [1992].mp4",
+    title: "Tom and Jerry: The Movie"
+  },
+  "tom-and-jerry-fast-and-furry": {
+    directUrl: "https://archive.org/download/tom-and-jerry-the-fast-and-the-furry-2005-1080p-brrip-a-release-lounge-h-264/Tom%20and%20Jerry%20The%20Fast%20and%20the%20Furry%202005%201080p%20BRRip%20%5BA%20Release-Lounge%20H264%5D.mp4",
+    fileName: "Tom and Jerry The Fast and the Furry 2005 1080p BRRip [A Release-Lounge H264].mp4",
+    title: "Tom and Jerry: The Fast and the Furry"
+  },
+  "tom-and-jerry-the-fast-and-the-furry-2005-1080p-brrip-a-release-lounge-h-264": {
+    directUrl: "https://archive.org/download/tom-and-jerry-the-fast-and-the-furry-2005-1080p-brrip-a-release-lounge-h-264/Tom%20and%20Jerry%20The%20Fast%20and%20the%20Furry%202005%201080p%20BRRip%20%5BA%20Release-Lounge%20H264%5D.mp4",
+    fileName: "Tom and Jerry The Fast and the Furry 2005 1080p BRRip [A Release-Lounge H264].mp4",
+    title: "Tom and Jerry: The Fast and the Furry"
+  },
+  "night-of-the-living-dead": {
+    directUrl: "https://archive.org/download/Night.Of.The.Living.Dead_1080p/NightOfTheLivingDead_720p.mp4",
+    fileName: "NightOfTheLivingDead_720p.mp4",
+    title: "Night of the Living Dead"
+  },
+  "Night.Of.The.Living.Dead_1080p": {
+    directUrl: "https://archive.org/download/Night.Of.The.Living.Dead_1080p/NightOfTheLivingDead_720p.mp4",
+    fileName: "NightOfTheLivingDead_720p.mp4",
+    title: "Night of the Living Dead"
+  },
+  "big-buck-bunny": {
+    directUrl: "https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4",
+    fileName: "BigBuckBunny_512kb.mp4",
+    title: "Big Buck Bunny"
+  },
+  "BigBuckBunny_328": {
+    directUrl: "https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4",
+    fileName: "BigBuckBunny_512kb.mp4",
+    title: "Big Buck Bunny"
+  },
+  "tears-of-steel": {
+    directUrl: "https://archive.org/download/Tears-of-Steel/tears_of_steel_720p.mp4",
+    fileName: "tears_of_steel_720p.mp4",
+    title: "Tears of Steel"
+  },
+  "Tears-of-Steel": {
+    directUrl: "https://archive.org/download/Tears-of-Steel/tears_of_steel_720p.mp4",
+    fileName: "tears_of_steel_720p.mp4",
+    title: "Tears of Steel"
+  },
+  "charade": {
+    directUrl: "https://archive.org/download/Charade_1953/CHARADE_1953.mp4",
+    fileName: "CHARADE_1953.mp4",
+    title: "Charade"
+  },
+  "Charade_1953": {
+    directUrl: "https://archive.org/download/Charade_1953/CHARADE_1953.mp4",
+    fileName: "CHARADE_1953.mp4",
+    title: "Charade"
+  },
+  "trip-to-the-moon": {
+    directUrl: "https://archive.org/download/Levoyagedanslalune/Le_voyage_dans_la_lune_A_trip_to_the_moon__Georges_Mlis_1902_512kb.mp4",
+    fileName: "Le_voyage_dans_la_lune_A_trip_to_the_moon__Georges_Mlis_1902_512kb.mp4",
+    title: "A Trip to the Moon"
+  },
+  "Levoyagedanslalune": {
+    directUrl: "https://archive.org/download/Levoyagedanslalune/Le_voyage_dans_la_lune_A_trip_to_the_moon__Georges_Mlis_1902_512kb.mp4",
+    fileName: "Le_voyage_dans_la_lune_A_trip_to_the_moon__Georges_Mlis_1902_512kb.mp4",
+    title: "A Trip to the Moon"
+  },
+  "his-girl-friday": {
+    directUrl: "https://archive.org/download/his_girl_friday/his_girl_friday.mp4",
+    fileName: "his_girl_friday.mp4",
+    title: "His Girl Friday"
+  },
+  "his_girl_friday": {
+    directUrl: "https://archive.org/download/his_girl_friday/his_girl_friday.mp4",
+    fileName: "his_girl_friday.mp4",
+    title: "His Girl Friday"
+  },
+  "the-phantom-of-the-opera": {
+    directUrl: "https://archive.org/download/ThePhantomoftheOpera/Phantom_of_the_Opera_512kb.mp4",
+    fileName: "Phantom_of_the_Opera_512kb.mp4",
+    title: "The Phantom of the Opera"
+  },
+  "ThePhantomoftheOpera": {
+    directUrl: "https://archive.org/download/ThePhantomoftheOpera/Phantom_of_the_Opera_512kb.mp4",
+    fileName: "Phantom_of_the_Opera_512kb.mp4",
+    title: "The Phantom of the Opera"
+  },
+  "the-general": {
+    directUrl: "https://archive.org/download/The_General_Buster_Keaton/The_General.mp4",
+    fileName: "The_General.mp4",
+    title: "The General"
+  },
+  "The_General_Buster_Keaton": {
+    directUrl: "https://archive.org/download/The_General_Buster_Keaton/The_General.mp4",
+    fileName: "The_General.mp4",
+    title: "The General"
+  },
+  "nosferatu": {
+    directUrl: "https://archive.org/download/Nosferatu_most_complete_version_93_mins./Nosferatu_1922_Symphony_of_Horror_512kb.mp4",
+    fileName: "Nosferatu_1922_Symphony_of_Horror_512kb.mp4",
+    title: "Nosferatu"
+  },
+  "Nosferatu_most_complete_version_93_mins.": {
+    directUrl: "https://archive.org/download/Nosferatu_most_complete_version_93_mins./Nosferatu_1922_Symphony_of_Horror_512kb.mp4",
+    fileName: "Nosferatu_1922_Symphony_of_Horror_512kb.mp4",
+    title: "Nosferatu"
+  },
+  "carnival-of-souls": {
+    directUrl: "https://archive.org/download/CarnivalofSouls/CarnivalOfSouls.mp4",
+    fileName: "CarnivalOfSouls.mp4",
+    title: "Carnival of Souls"
+  },
+  "CarnivalofSouls": {
+    directUrl: "https://archive.org/download/CarnivalofSouls/CarnivalOfSouls.mp4",
+    fileName: "CarnivalOfSouls.mp4",
+    title: "Carnival of Souls"
+  },
+  "house-on-haunted-hill": {
+    directUrl: "https://archive.org/download/house_on_haunted_hill_ipod/house_on_haunted_hill.mp4",
+    fileName: "house_on_haunted_hill.mp4",
+    title: "House on Haunted Hill"
+  },
+  "house_on_haunted_hill_ipod": {
+    directUrl: "https://archive.org/download/house_on_haunted_hill_ipod/house_on_haunted_hill.mp4",
+    fileName: "house_on_haunted_hill.mp4",
+    title: "House on Haunted Hill"
+  },
+  "the-little-shop-of-horrors": {
+    directUrl: "https://archive.org/download/TheLittleShopOfHorrors1960/The-Little-Shop-of-Horrors.mp4",
+    fileName: "The-Little-Shop-of-Horrors.mp4",
+    title: "The Little Shop of Horrors"
+  },
+  "TheLittleShopOfHorrors1960": {
+    directUrl: "https://archive.org/download/TheLittleShopOfHorrors1960/The-Little-Shop-of-Horrors.mp4",
+    fileName: "The-Little-Shop-of-Horrors.mp4",
+    title: "The Little Shop of Horrors"
+  },
+  "plan-9-from-outer-space": {
+    directUrl: "https://archive.org/download/774-plan-9-from-outer-space/774-Plan9FromOuterSpace.mp4",
+    fileName: "774-Plan9FromOuterSpace.mp4",
+    title: "Plan 9 from Outer Space"
+  },
+  "774-plan-9-from-outer-space": {
+    directUrl: "https://archive.org/download/774-plan-9-from-outer-space/774-Plan9FromOuterSpace.mp4",
+    fileName: "774-Plan9FromOuterSpace.mp4",
+    title: "Plan 9 from Outer Space"
+  },
+  "gullivers-travels": {
+    directUrl: "https://archive.org/download/gullivers_travels1939_divx/gullivers_travels1939.mp4",
+    fileName: "gullivers_travels1939.mp4",
+    title: "Gulliver's Travels"
+  },
+  "gullivers_travels1939_divx": {
+    directUrl: "https://archive.org/download/gullivers_travels1939_divx/gullivers_travels1939.mp4",
+    fileName: "gullivers_travels1939.mp4",
+    title: "Gulliver's Travels"
+  },
+  "the-last-man-on-earth": {
+    directUrl: "https://archive.org/download/TheLastManOnEarth_72/the_last_man_on_earth.mp4",
+    fileName: "the_last_man_on_earth.mp4",
+    title: "The Last Man on Earth"
+  },
+  "TheLastManOnEarth_72": {
+    directUrl: "https://archive.org/download/TheLastManOnEarth_72/the_last_man_on_earth.mp4",
+    fileName: "the_last_man_on_earth.mp4",
+    title: "The Last Man on Earth"
+  },
+  "sintel": {
+    directUrl: "https://archive.org/download/Sintel/sintel-2048-surround.mp4",
+    fileName: "sintel-2048-surround.mp4",
+    title: "Sintel"
+  },
+  "Sintel": {
+    directUrl: "https://archive.org/download/Sintel/sintel-2048-surround.mp4",
+    fileName: "sintel-2048-surround.mp4",
+    title: "Sintel"
+  }
+};
+
 // Archive.org Movie Stream & Metadata Resolver
 // Resolves actual direct .mp4 streaming files for any Archive.org item to bypass patched/blocked iframes
 async function resolveArchiveMovie(archiveId: string) {
+  if (DEFAULT_VERIFIED_MOVIES[archiveId]) {
+    return {
+      ...DEFAULT_VERIFIED_MOVIES[archiveId],
+      expires: Date.now() + 365 * 24 * 3600 * 1000
+    };
+  }
+
   const cached = movieStreamCache.get(archiveId);
   if (cached && cached.expires > Date.now()) {
     return cached;
@@ -138,7 +329,6 @@ app.get("/api/movie/player/:id", async (req, res) => {
     <div class="nav-bar">
       <div class="badge">⚡ Unblocked Cinema Stream (${title})</div>
       <div class="controls">
-        <button class="btn" onclick="toggleCloak()">Cloak in Google Drive</button>
         <button class="btn" onclick="history.back()">Back to App</button>
       </div>
     </div>
@@ -146,29 +336,6 @@ app.get("/api/movie/player/:id", async (req, res) => {
       Your browser does not support the video tag.
     </video>
   </div>
-  <script>
-    function toggleCloak() {
-      const win = window.open('about:blank', '_blank');
-      if (win) {
-        win.document.title = "Google Drive - My Drive";
-        const link = win.document.createElement('link');
-        link.rel = 'icon';
-        link.href = 'https://ssl.gstatic.com/docs/doclist/images/drive_2022q3_32dp.png';
-        win.document.head.appendChild(link);
-        win.document.body.style.margin = '0';
-        win.document.body.style.height = '100vh';
-        win.document.body.style.background = '#000';
-        const frame = win.document.createElement('iframe');
-        frame.style.width = '100%';
-        frame.style.height = '100%';
-        frame.style.border = 'none';
-        frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen';
-        frame.allowFullscreen = true;
-        frame.src = window.location.href;
-        win.document.body.appendChild(frame);
-      }
-    }
-  </script>
 </body>
 </html>`;
 
@@ -361,7 +528,7 @@ app.get("/api/youtube/probe", async (req, res) => {
   });
 });
 
-// Advanced YouTube Proxy Player Page with Multi-Instance Failover & Stealth Disguises
+// Advanced YouTube Proxy Player Page with Multi-Instance Failover
 app.get("/api/youtube/proxy-player/:id", (req, res) => {
   const videoId = req.params.id;
   if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
@@ -370,7 +537,6 @@ app.get("/api/youtube/proxy-player/:id", (req, res) => {
 
   const engine = (req.query.engine as string || "nocookie").toLowerCase();
   const startTime = Number(req.query.t || req.query.start) || 0;
-  const cloakPreset = (req.query.cloak as string || "docs").toLowerCase();
 
   const startParam = startTime > 0 ? `&start=${startTime}` : "";
   const host = req.headers.host || "";
@@ -392,38 +558,12 @@ app.get("/api/youtube/proxy-player/:id", (req, res) => {
     targetUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1${originParam}${startParam}`;
   }
 
-  const cloakPresets: Record<string, { title: string; icon: string }> = {
-    docs: {
-      title: "Google Docs - Untitled document",
-      icon: "https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico"
-    },
-    drive: {
-      title: "Google Drive - My Drive",
-      icon: "https://ssl.gstatic.com/docs/doclist/images/drive_2022q3_32dp.png"
-    },
-    classroom: {
-      title: "Google Classroom",
-      icon: "https://ssl.gstatic.com/classroom/favicon.png"
-    },
-    canvas: {
-      title: "Dashboard - Canvas LMS",
-      icon: "https://du11hjcvx0uqb.cloudfront.net/br/dist/images/favicon-e10d657a73.ico"
-    },
-    desmos: {
-      title: "Desmos | Graphing Calculator",
-      icon: "https://www.desmos.com/favicon.ico"
-    }
-  };
-
-  const selectedCloak = cloakPresets[cloakPreset] || cloakPresets.docs;
-
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${selectedCloak.title}</title>
-  <link rel="icon" href="${selectedCloak.icon}" type="image/x-icon">
+  <title>YouTube Player</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; background: #09090b; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #fff; }
@@ -439,8 +579,6 @@ app.get("/api/youtube/proxy-player/:id", (req, res) => {
     .actions { display: flex; align-items: center; gap: 6px; shrink-0; }
     .action-btn { padding: 4px 9px; background: #27272a; color: #e4e4e7; border: 1px solid #3f3f46; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.15s; display: flex; align-items: center; gap: 4px; }
     .action-btn:hover { background: #3f3f46; color: #fff; }
-    .cloak-btn { background: #4f46e5; border-color: #6366f1; color: #fff; }
-    .cloak-btn:hover { background: #4338ca; }
     .panic-btn { background: #991b1b; border-color: #b91c1c; }
     .panic-btn:hover { background: #b91c1c; }
     #player-wrapper { flex: 1; position: relative; background: #000; width: 100%; height: 100%; }
@@ -464,8 +602,7 @@ app.get("/api/youtube/proxy-player/:id", (req, res) => {
         <button class="node-btn ${engine === 'direct' ? 'active' : ''}" onclick="switchEngine('direct')">🚀 5. Direct Web</button>
       </div>
       <div class="actions">
-        <button class="action-btn cloak-btn" onclick="launchCloak()">🕶️ Cloaked Tab</button>
-        <button class="action-btn panic-btn" onclick="triggerPanic()">🚨 Panic (ESC)</button>
+        <button class="action-btn panic-btn" onclick="triggerPanic()">🚨 Quick Exit</button>
         <button class="action-btn" onclick="history.back()">Back</button>
       </div>
     </div>
@@ -501,30 +638,8 @@ app.get("/api/youtube/proxy-player/:id", (req, res) => {
       switchEngine(next);
     }
 
-    function launchCloak() {
-      const win = window.open('about:blank', '_blank');
-      if (win) {
-        win.document.title = "Google Docs - Untitled document";
-        const link = win.document.createElement('link');
-        link.rel = 'icon';
-        link.href = 'https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico';
-        win.document.head.appendChild(link);
-        win.document.body.style.margin = '0';
-        win.document.body.style.height = '100vh';
-        win.document.body.style.background = '#000';
-        const frame = win.document.createElement('iframe');
-        frame.style.width = '100%';
-        frame.style.height = '100%';
-        frame.style.border = 'none';
-        frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen';
-        frame.allowFullscreen = true;
-        frame.src = window.location.href;
-        win.document.body.appendChild(frame);
-      }
-    }
-
     function triggerPanic() {
-      window.location.replace('https://classroom.google.com');
+      window.location.replace('https://google.com');
     }
 
     window.addEventListener('keydown', (e) => {
@@ -565,6 +680,19 @@ const KNOWN_CHANNEL_AVATARS_SERVER: Record<string, string> = {
   'rick astley': 'https://yt3.ggpht.com/MOWpaiGJdgN4aKMI-NGQLL4jMVP3aDORlQpOBWooi0GSE2TGt4_9ncyepk1pCh-yWQ795AhPbw=s176-c-k-c0x00ffffff-no-rj',
   'jawed': 'https://yt3.ggpht.com/uI3VE4PVqvCy0xnWLqMJnEzyBUm3T8VHOCp4ee-1RxdHqKXCdUE_qXYQnpf9AfuEoIPactVyDhM=s176-c-k-c0x00ffffff-no-rj',
   'jacob + katie schwarz': 'https://yt3.ggpht.com/cwlOSPsmMDwWYJtb_ple4M_-FtiIXBg_aDl2tm9JzpTscH7MJAa7U-3vVL4w5v47N9h6pR80=s176-c-k-c0x00ffffff-no-rj',
+  'luis fonsi': 'https://yt3.ggpht.com/ia2BN5pgqtFZ79o-HmDrTZAZ3tATeNeUwx74ys7w4HMm7NLKX_tMFtLhOCPAiyOWTMrDoSapuQ=s176-c-k-c0x00ffffff-no-rj',
+  'queen official': 'https://yt3.ggpht.com/MiFTTCMl22bQ46F91rXFVhZ7PnBfLujsRWNxMik7NKVRDRBc-uBE7fba_3r9vTN39JvfRmh8nVU=s176-c-k-c0x00ffffff-no-rj',
+  'the weeknd': 'https://yt3.ggpht.com/pZQ5JMD4EOI8TcNYAPTzMexe_fC0CKnb_hYlV4rPfIzmDidF239fH1XKmzkeT30XSg7fxNwc_w=s176-c-k-c0x00ffffff-no-rj',
+  'marshmello': 'https://yt3.ggpht.com/_GYRbg3_acyrsmJbhqHV15sM-Z75gAHqV1uFXXkxIPdsauNqFBXpaXsn6OlwGNGBSm4gu8tYKvY=s176-c-k-c0x00ffffff-no-rj',
+  'rockstar games': 'https://yt3.ggpht.com/f0PgbUq0tAdrt_rQxprZdPfgg96y54Ge-LCagXvPzc6gnMiw42w-J-wAZ2n-TfXgB3ASkxk2=s176-c-k-c0x00ffffff-no-rj',
+  'minecraft': 'https://yt3.ggpht.com/5ixR10JivFjRX1kTO30sTY5se8Nt4SMmGH5uRIRZwLyA1JJaEPcQJMyQHqygozoo1kmiQKcBJw=s176-c-k-c0x00ffffff-no-rj',
+  'luke thenotable': 'https://yt3.ggpht.com/vahZmaosZ4sZURgpEpMYRNSNhkoB6YUNOa5JemtTGb4DxC_VcZ50fpBhhlOrcm2bRYA91mqlUQ=s176-c-k-c0x00ffffff-no-rj',
+  'vaatividya': 'https://yt3.ggpht.com/b7qVCasKUx-jmNipWOcHz6kJK5L9iPEfhYK2IHOKCjDM46Z3bNUXn3DSWiNNpt8Sx130dyDISko=s176-c-k-c0x00ffffff-no-rj',
+  'melodysheep': 'https://yt3.ggpht.com/ytc/AIdro_klHVaP6_ZcnT8VyPFedRHgJOPOym_tLSxoFCL0KJSZL1k=s176-c-k-c0x00ffffff-no-rj',
+  'ted-ed': 'https://yt3.ggpht.com/7vCbvtCqtjQ3YLgsJt7Y952MQV1sBvhllSCSxHP8_sVZdcPCBrITfhkN2RdyCuwPnsByq-1GoA=s176-c-k-c0x00ffffff-no-rj',
+  'domain of science': 'https://yt3.ggpht.com/qrwWz-16J8HPWPPgLD8FXYdHSUHFW-yeBNUXTzDKjgY3-MsIpPzoBasolfqLdVzGs5kepKfdfA=s176-c-k-c0x00ffffff-no-rj',
+  'netflix': 'https://yt3.ggpht.com/3b73AYEMMfa3SX5KJMeygio9smTPvrPrpicuQZbfQ_2DN7dV_ApiRM4CdYjSprEy1YYvt_9b=s176-c-k-c0x00ffffff-no-rj',
+  'history': 'https://yt3.ggpht.com/PuK25BOIG4MnfQL68iXXMaI_AbJ1vACxdE_seCkpTeD3hftaEOhdl-i0LYBBoWelxWUZNvWi=s176-c-k-c0x00ffffff-no-rj',
   'mkbhd': 'https://yt3.googleusercontent.com/qu4TmIaYUlS41-dJ9gZ7DUR3nilvmB5_11i6OKSdvNnBNiyOusZP1bMN6ICnuxtjFBb6ioKgRQ=s160-c-k-c0x00ffffff-no-rj',
   'marques brownlee': 'https://yt3.googleusercontent.com/qu4TmIaYUlS41-dJ9gZ7DUR3nilvmB5_11i6OKSdvNnBNiyOusZP1bMN6ICnuxtjFBb6ioKgRQ=s160-c-k-c0x00ffffff-no-rj',
   'linus tech tips': 'https://yt3.googleusercontent.com/gnvYLhXy8FAlPXZ2RTrkrgj-5kyt0vdE2FUGVOiKGdEZIa-wN5A-7nwZBlWJLzUMmoh1NWAU=s160-c-k-c0x00ffffff-no-rj',
@@ -680,7 +808,7 @@ app.get("/api/youtube/search", async (req, res) => {
 
           // Proxy avatar so school firewalls never block it
           const channelAvatar = rawAvatar
-            ? `/api/youtube/avatar-proxy?url=${encodeURIComponent(rawAvatar)}`
+            ? `/api/youtube/avatar-proxy?url=${encodeURIComponent(rawAvatar)}&channel=${encodeURIComponent(channelText)}`
             : `/api/youtube/channel-avatar?channel=${encodeURIComponent(channelText)}&videoId=${v.videoId}`;
 
           results.push({
@@ -1289,7 +1417,7 @@ app.get("/api/youtube/feed", async (req, res) => {
           });
 
           const channelAvatar = rawAvatar
-            ? `/api/youtube/avatar-proxy?url=${encodeURIComponent(rawAvatar)}`
+            ? `/api/youtube/avatar-proxy?url=${encodeURIComponent(rawAvatar)}&channel=${encodeURIComponent(channelText)}`
             : `/api/youtube/channel-avatar?channel=${encodeURIComponent(channelText)}&videoId=${v.videoId}`;
 
           videos.push({
@@ -1336,11 +1464,47 @@ app.get("/api/youtube/feed", async (req, res) => {
   }
 });
 
+function sendSvgAvatar(res: express.Response, name: string) {
+  const cleanName = (name || "YT").trim();
+  const initials = cleanName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0])
+    .join("")
+    .toUpperCase() || "YT";
+
+  let hash = 0;
+  for (let i = 0; i < cleanName.length; i++) {
+    hash = (hash << 5) - hash + cleanName.charCodeAt(i);
+    hash |= 0;
+  }
+  const palettes = [
+    ["#f59e0b", "#b45309"], // amber
+    ["#3b82f6", "#1d4ed8"], // blue
+    ["#10b981", "#047857"], // emerald
+    ["#8b5cf6", "#6d28d9"], // purple
+    ["#ec4899", "#be185d"], // rose
+    ["#06b6d4", "#0e7490"], // cyan
+    ["#f97316", "#c2410c"]  // orange
+  ];
+  const [c1, c2] = palettes[Math.abs(hash) % palettes.length];
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs><circle cx="80" cy="80" r="78" fill="url(#g)" stroke="#ffffff" stroke-width="3" stroke-opacity="0.25"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="52" font-weight="800" fill="#ffffff" letter-spacing="1">${initials}</text></svg>`;
+
+  res.setHeader("Content-Type", "image/svg+xml");
+  res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  return res.send(svg);
+}
+
 // Authentic Creator Avatar Proxy (Caches and proxies Google/YouTube profile images without CORS or school blocks)
 app.get("/api/youtube/avatar-proxy", async (req, res) => {
   const targetUrl = (req.query.url as string || "").trim();
+  const channelName = (req.query.channel as string || "YT").trim();
+
   if (!targetUrl) {
-    return res.redirect("https://ui-avatars.com/api/?name=YT&background=27272a&color=f59e0b&size=160&bold=true");
+    return sendSvgAvatar(res, channelName);
   }
 
   try {
@@ -1359,7 +1523,7 @@ app.get("/api/youtube/avatar-proxy", async (req, res) => {
       parsed.hostname.includes("ggpht.com");
 
     if (!isAllowed) {
-      return res.redirect("https://ui-avatars.com/api/?name=YT&background=27272a&color=f59e0b&size=160&bold=true");
+      return sendSvgAvatar(res, channelName);
     }
 
     const imageRes = await fetch(parsed.toString(), {
@@ -1371,7 +1535,7 @@ app.get("/api/youtube/avatar-proxy", async (req, res) => {
     });
 
     if (!imageRes.ok) {
-      return res.redirect("https://ui-avatars.com/api/?name=YT&background=27272a&color=f59e0b&size=160&bold=true");
+      return sendSvgAvatar(res, channelName);
     }
 
     const buffer = await imageRes.arrayBuffer();
@@ -1380,7 +1544,7 @@ app.get("/api/youtube/avatar-proxy", async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.send(Buffer.from(buffer));
   } catch {
-    res.redirect("https://ui-avatars.com/api/?name=YT&background=27272a&color=f59e0b&size=160&bold=true");
+    sendSvgAvatar(res, channelName);
   }
 });
 
@@ -1393,7 +1557,7 @@ app.get("/api/youtube/channel-avatar", async (req, res) => {
   // 1. Check in-memory avatar cache
   if (key && channelAvatarCache.has(key)) {
     const cachedUrl = channelAvatarCache.get(key)!;
-    return res.redirect(`/api/youtube/avatar-proxy?url=${encodeURIComponent(cachedUrl)}`);
+    return res.redirect(`/api/youtube/avatar-proxy?url=${encodeURIComponent(cachedUrl)}&channel=${encodeURIComponent(channel)}`);
   }
 
   // 2. Fetch watch page if videoId provided to extract exact owner avatar
@@ -1420,7 +1584,7 @@ app.get("/api/youtube/channel-avatar", async (req, res) => {
               if (bestAvatar.startsWith("//")) bestAvatar = "https:" + bestAvatar;
               if (key) channelAvatarCache.set(key, bestAvatar);
               channelAvatarCache.set(`vid_${videoId}`, bestAvatar);
-              return res.redirect(`/api/youtube/avatar-proxy?url=${encodeURIComponent(bestAvatar)}`);
+              return res.redirect(`/api/youtube/avatar-proxy?url=${encodeURIComponent(bestAvatar)}&channel=${encodeURIComponent(channel)}`);
             }
           }
         }
@@ -1454,7 +1618,7 @@ app.get("/api/youtube/channel-avatar", async (req, res) => {
                   let url = cThumbs[cThumbs.length - 1].url;
                   if (url.startsWith("//")) url = "https:" + url;
                   channelAvatarCache.set(key, url);
-                  return res.redirect(`/api/youtube/avatar-proxy?url=${encodeURIComponent(url)}`);
+                  return res.redirect(`/api/youtube/avatar-proxy?url=${encodeURIComponent(url)}&channel=${encodeURIComponent(channel)}`);
                 }
               }
               const vRenderer = item.videoRenderer;
@@ -1468,7 +1632,7 @@ app.get("/api/youtube/channel-avatar", async (req, res) => {
                     let url = vThumbs[vThumbs.length - 1].url;
                     if (url.startsWith("//")) url = "https:" + url;
                     channelAvatarCache.set(key, url);
-                    return res.redirect(`/api/youtube/avatar-proxy?url=${encodeURIComponent(url)}`);
+                    return res.redirect(`/api/youtube/avatar-proxy?url=${encodeURIComponent(url)}&channel=${encodeURIComponent(channel)}`);
                   }
                 }
               }
@@ -1479,7 +1643,7 @@ app.get("/api/youtube/channel-avatar", async (req, res) => {
     } catch {}
   }
 
-  res.redirect(`https://ui-avatars.com/api/?name=${encodeURIComponent(channel || "YT")}&background=27272a&color=f59e0b&size=160&bold=true`);
+  sendSvgAvatar(res, channel);
 });
 
 // Unblocked Thumbnail Proxy (Bypasses school blocks on i.ytimg.com)
@@ -1588,6 +1752,22 @@ app.get("/api/youtube/stream", async (req, res) => {
     const directUrl = await resolveYouTubeStreamUrl(videoId);
     const clientRange = req.headers.range;
 
+    let ytClientClosed = false;
+    let activeYtUpstreamRes: http.IncomingMessage | null = null;
+
+    const onYtClientClose = () => {
+      ytClientClosed = true;
+      if (activeYtUpstreamRes && !activeYtUpstreamRes.destroyed) {
+        try { activeYtUpstreamRes.destroy(); } catch {}
+      }
+      if (!upstreamReq.destroyed) {
+        try { upstreamReq.destroy(); } catch {}
+      }
+    };
+
+    req.once('close', onYtClientClose);
+    res.once('close', onYtClientClose);
+
     const upstreamReq = https.request(directUrl, {
       method: 'GET',
       headers: {
@@ -1596,6 +1776,7 @@ app.get("/api/youtube/stream", async (req, res) => {
         'Accept': '*/*'
       }
     }, (upstreamRes) => {
+      activeYtUpstreamRes = upstreamRes;
       res.status(upstreamRes.statusCode || 200);
 
       const forwardHeaders = ['content-type', 'content-range', 'content-length', 'accept-ranges'];
@@ -1609,16 +1790,23 @@ app.get("/api/youtube/stream", async (req, res) => {
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Cache-Control', 'public, max-age=3600');
 
+      upstreamRes.on('error', (err: any) => {
+        const isExpected = ytClientClosed || err?.message === 'aborted' || err?.code === 'ECONNRESET';
+        if (!isExpected) {
+          console.warn('YouTube stream response error:', err?.message || err);
+        }
+        if (!res.writableEnded) res.end();
+      });
+
       upstreamRes.pipe(res);
     });
 
-    upstreamReq.on('error', (err) => {
-      console.warn('Stream proxy upstream error:', err.message);
+    upstreamReq.on('error', (err: any) => {
+      const isExpected = ytClientClosed || err?.message === 'aborted' || err?.code === 'ECONNRESET';
+      if (!isExpected) {
+        console.warn('Stream proxy upstream error:', err?.message || err);
+      }
       if (!res.headersSent) res.status(502).send("Stream proxy failed");
-    });
-
-    req.on('close', () => {
-      upstreamReq.destroy();
     });
 
     upstreamReq.end();
@@ -1655,7 +1843,7 @@ function pipeUpstreamMedia(
   res: express.Response,
   redirectCount = 0
 ) {
-  if (redirectCount > 5) {
+  if (redirectCount > 6) {
     if (!res.headersSent) res.status(508).json({ error: "Too many upstream redirects" });
     return;
   }
@@ -1671,35 +1859,84 @@ function pipeUpstreamMedia(
   const clientRange = req.headers.range;
   const protocolModule = parsedUrl.protocol === "http:" ? http : https;
 
+  // Use legitimate browser User-Agent and standard Archive.org referer to prevent CDN hotlink blocks
+  let ref = parsedUrl.origin + "/";
+  if (parsedUrl.hostname.includes("archive.org")) {
+    ref = "https://archive.org/";
+  }
+
   const upstreamHeaders: Record<string, string> = {
-    "User-Agent": (req.headers["user-agent"] as string) || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "User-Agent": (req.headers["user-agent"] as string) || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "*/*",
     "Accept-Encoding": "identity",
-    "Referer": parsedUrl.origin + "/"
+    "Referer": ref
   };
 
   if (clientRange) {
     upstreamHeaders["Range"] = clientRange;
   }
 
-  const upstreamReq = protocolModule.request(targetUrl, {
+  let clientAborted = false;
+  let hasEnded = false;
+  let isStreaming = false;
+  let activeUpstreamRes: http.IncomingMessage | null = null;
+
+  const onClientClose = () => {
+    clientAborted = true;
+    hasEnded = true;
+    if (activeUpstreamRes && !activeUpstreamRes.destroyed) {
+      try {
+        activeUpstreamRes.destroy();
+      } catch {}
+    }
+    if (!upstreamReq.destroyed) {
+      try {
+        upstreamReq.destroy();
+      } catch {}
+    }
+  };
+
+  req.once("close", onClientClose);
+  res.once("close", onClientClose);
+
+  const upstreamReq = protocolModule.request(parsedUrl, {
     method: req.method === "HEAD" ? "HEAD" : "GET",
-    headers: upstreamHeaders,
-    timeout: 20000
+    headers: upstreamHeaders
   }, (upstreamRes) => {
+    activeUpstreamRes = upstreamRes;
+    isStreaming = true;
+    // CRITICAL: Disable socket inactivity timeout so pausing video or buffering doesn't abort stream
+    upstreamReq.setTimeout(0);
+
     const statusCode = upstreamRes.statusCode || 200;
 
-    // Seamlessly follow 3xx redirects internally so Linwize never sees the destination CDN node
+    // Seamlessly follow 3xx redirects internally so Linwize never sees destination CDN node
     if ([301, 302, 303, 307, 308].includes(statusCode) && upstreamRes.headers.location) {
       const nextLocation = new URL(upstreamRes.headers.location, targetUrl).toString();
       upstreamRes.resume(); // consume and discard response data to free socket
       return pipeUpstreamMedia(nextLocation, req, res, redirectCount + 1);
     }
 
+    // Auto-heal 404 / 403 on archive.org downloads: if a file path is wrong, resolve real file from archiveId
+    if ((statusCode === 404 || statusCode === 403) && redirectCount === 0 && targetUrl.includes("archive.org/download/")) {
+      const archiveMatch = targetUrl.match(/archive\.org\/download\/([a-zA-Z0-9._-]+)/);
+      if (archiveMatch && archiveMatch[1]) {
+        upstreamRes.resume();
+        resolveArchiveMovie(archiveMatch[1]).then(resolved => {
+          if (resolved && resolved.directUrl && resolved.directUrl !== targetUrl) {
+            return pipeUpstreamMedia(resolved.directUrl, req, res, redirectCount + 1);
+          }
+          if (!res.headersSent) res.status(statusCode).end();
+        }).catch(() => {
+          if (!res.headersSent) res.status(statusCode).end();
+        });
+        return;
+      }
+    }
+
     res.status(statusCode);
 
     const forwardHeaders = [
-      "content-type",
       "content-range",
       "content-length",
       "accept-ranges",
@@ -1713,32 +1950,85 @@ function pipeUpstreamMedia(
       }
     }
 
+    let cType = (upstreamRes.headers["content-type"] as string) || "";
+    if (!cType || cType.includes("octet-stream") || cType.includes("text/html")) {
+      if (targetUrl.toLowerCase().includes(".mp4")) {
+        cType = "video/mp4";
+      } else if (targetUrl.toLowerCase().includes(".webm")) {
+        cType = "video/webm";
+      } else if (targetUrl.toLowerCase().includes(".mkv")) {
+        cType = "video/x-matroska";
+      }
+    }
+    if (cType) {
+      res.setHeader("Content-Type", cType);
+    }
+
     res.setHeader("Accept-Ranges", "bytes");
     res.setHeader("Cache-Control", "public, max-age=86400");
     res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Headers", "Range, Accept, Origin, Content-Type, Authorization, X-Requested-With");
+    res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges, Content-Type");
 
     if (req.method === "HEAD") {
+      hasEnded = true;
       return res.end();
     }
+
+    upstreamRes.on("error", (err: any) => {
+      const isExpectedAbort =
+        clientAborted ||
+        hasEnded ||
+        req.destroyed ||
+        res.destroyed ||
+        err?.message === "aborted" ||
+        err?.code === "ECONNRESET" ||
+        err?.code === "ERR_STREAM_PREMATURE_CLOSE";
+
+      if (!isExpectedAbort) {
+        console.warn("Upstream response error:", err?.message || err);
+      }
+      if (!res.writableEnded) {
+        try {
+          res.end();
+        } catch {}
+      }
+    });
+
+    upstreamRes.on("close", () => {
+      hasEnded = true;
+    });
+
+    upstreamRes.on("end", () => {
+      hasEnded = true;
+    });
 
     upstreamRes.pipe(res);
   });
 
-  upstreamReq.on("timeout", () => {
-    upstreamReq.destroy();
-    if (!res.headersSent) {
-      res.status(504).json({ error: "Secondary worker upstream gateway timeout" });
+  // Handshake connection timeout (25 seconds) before headers arrive
+  upstreamReq.setTimeout(25000, () => {
+    if (!isStreaming && !clientAborted) {
+      upstreamReq.destroy();
+      if (!res.headersSent) {
+        res.status(504).json({ error: "Secondary worker upstream gateway timeout" });
+      }
     }
   });
 
-  upstreamReq.on("error", (err) => {
-    if (!res.headersSent) {
+  upstreamReq.on("error", (err: any) => {
+    const isExpectedAbort =
+      clientAborted ||
+      hasEnded ||
+      req.destroyed ||
+      res.destroyed ||
+      err?.message === "aborted" ||
+      err?.code === "ECONNRESET" ||
+      err?.code === "ERR_STREAM_PREMATURE_CLOSE";
+
+    if (!isExpectedAbort && !res.headersSent) {
       res.status(502).json({ error: "Upstream stream fetch failed", details: err.message });
     }
-  });
-
-  req.on("close", () => {
-    upstreamReq.destroy();
   });
 
   upstreamReq.end();
@@ -1773,14 +2063,19 @@ app.all("/api/movie/stream/:id", async (req, res) => {
     return res.status(204).end();
   }
 
-  const idOrUrl = (req.params.id || req.query.url as string || "").trim();
-  if (!idOrUrl) {
+  const queryUrl = (req.query.url as string || "").trim();
+  const paramId = (req.params.id || "").trim();
+  const idOrUrl = paramId || queryUrl;
+
+  if (!idOrUrl && !queryUrl) {
     return res.status(400).json({ error: "Missing movie ID" });
   }
 
   try {
     let directUrl = "";
-    if (idOrUrl.startsWith("http://") || idOrUrl.startsWith("https://")) {
+    if (queryUrl && (queryUrl.startsWith("http://") || queryUrl.startsWith("https://"))) {
+      directUrl = queryUrl;
+    } else if (idOrUrl.startsWith("http://") || idOrUrl.startsWith("https://")) {
       directUrl = idOrUrl;
     } else {
       const resolved = await resolveArchiveMovie(idOrUrl);
@@ -1975,8 +2270,7 @@ app.get("/api/youtube/embed/:id", (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Docs - Untitled document</title>
-  <link rel="icon" href="https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico" type="image/x-icon">
+  <title>YouTube Player</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; }
@@ -1987,8 +2281,6 @@ app.get("/api/youtube/embed/:id", (req, res) => {
     .fallback-btn { padding: 4px 10px; background: rgba(35, 35, 45, 0.9); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none; transition: 0.15s; }
     .fallback-btn:hover { background: #f59e0b; color: #000; }
     .fallback-btn.active { background: #10b981; color: #000; border-color: #34d399; }
-    .cloak-btn { background: #6366f1; color: #fff; }
-    .cloak-btn:hover { background: #4f46e5; color: #fff; }
     .err-notice { position: absolute; top: 40%; text-align: center; color: #aaa; font-size: 13px; display: none; padding: 20px; }
   </style>
 </head>
@@ -2011,34 +2303,12 @@ app.get("/api/youtube/embed/:id", (req, res) => {
       <button class="fallback-btn ${mirror === 2 ? 'active' : ''}" onclick="switchMode(2)">3. Yewtu.be</button>
       <button class="fallback-btn ${mirror === 3 ? 'active' : ''}" onclick="switchMode(3)">4. Google Translate</button>
       <button class="fallback-btn ${mirror === 4 ? 'active' : ''}" onclick="switchMode(4)">5. Direct Web</button>
-      <button class="fallback-btn cloak-btn" onclick="openCloak()">Launch Cloaked Tab</button>
     </div>
   </div>
   <script>
     const vid = ${JSON.stringify(videoId)};
     function switchMode(idx) {
       window.location.href = '/api/youtube/embed/' + vid + '?mirror=' + idx;
-    }
-    function openCloak() {
-      const win = window.open('about:blank', '_blank');
-      if (win) {
-        win.document.title = "Google Drive - My Drive";
-        const link = win.document.createElement('link');
-        link.rel = 'icon';
-        link.href = 'https://ssl.gstatic.com/docs/doclist/images/drive_2022q3_32dp.png';
-        win.document.head.appendChild(link);
-        win.document.body.style.margin = '0';
-        win.document.body.style.height = '100vh';
-        win.document.body.style.background = '#000';
-        const frame = win.document.createElement('iframe');
-        frame.style.width = '100%';
-        frame.style.height = '100%';
-        frame.style.border = 'none';
-        frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen';
-        frame.allowFullscreen = true;
-        frame.src = window.location.href;
-        win.document.body.appendChild(frame);
-      }
     }
     const nativePlayer = document.getElementById('native-player');
     if (nativePlayer) {

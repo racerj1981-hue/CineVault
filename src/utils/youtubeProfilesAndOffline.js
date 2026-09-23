@@ -24,7 +24,7 @@ export const DEFAULT_USER_PROFILES = [
     name: 'Linwize School Bypass',
     avatarEmoji: '🛡️',
     color: 'amber',
-    description: 'School filter bypass mode, maximum stealth, and Linwize cloud relay'
+    description: 'School filter bypass mode and Linwize cloud relay'
   },
   {
     id: 'study',

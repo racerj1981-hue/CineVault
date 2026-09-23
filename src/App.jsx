@@ -7,14 +7,12 @@ import { PlayerView } from './components/PlayerView';
 import { YouTubeView } from './components/YouTubeView';
 import { AddMediaModal } from './components/AddMediaModal';
 import { SettingsModal } from './components/SettingsModal';
-import { StealthCloakOverlay } from './components/StealthCloakOverlay';
 import { MovieIcon } from './components/MovieIcon';
 import { Settings } from 'lucide-react';
 import {
   getStoredSettings,
-  saveStoredSettings,
-  applyTabCloak
-} from './utils/cloaker';
+  saveStoredSettings
+} from './utils/appSettings';
 
 const STORAGE_CATALOG_KEY = 'unblocked_movies_catalog_v3';
 const STORAGE_FAV_KEY = 'unblocked_movies_favorites_v2';
@@ -76,10 +74,9 @@ export default function App() {
   const [sortBy, setSortBy] = useState('popular');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
-  // Modals & Overlays
+  // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isStealthCloakOpen, setIsStealthCloakOpen] = useState(false);
 
   // User Settings
   const [settings, setSettings] = useState(getStoredSettings);
@@ -88,25 +85,6 @@ export default function App() {
     setSettings(newSettings);
     saveStoredSettings(newSettings);
   };
-
-  const handleTriggerCloak = () => {
-    applyTabCloak(settings.cloakPreset);
-    if (settings.enableInPageOverlay) {
-      setIsStealthCloakOpen(true);
-    }
-  };
-
-  // Auto-cloak on tab blur/switch (teacher walk-by protection)
-  useEffect(() => {
-    if (!settings.autoCloakOnBlur) return;
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        applyTabCloak(settings.cloakPreset);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [settings.autoCloakOnBlur, settings.cloakPreset]);
 
   // Save favorites to localStorage
   useEffect(() => {
@@ -256,22 +234,15 @@ export default function App() {
   // If in Player View, render player
   if (activeItem) {
     return (
-      <>
-        <PlayerView
-          item={activeItem}
-          allCatalog={mediaItems}
-          onBack={handleBack}
-          onSelectNext={handlePlay}
-          onSelectPrev={handlePlay}
-          isFavorite={favorites.includes(activeItem.id)}
-          onToggleFavorite={handleToggleFavorite}
-          onTriggerCloak={handleTriggerCloak}
-        />
-        <StealthCloakOverlay
-          isOpen={isStealthCloakOpen}
-          onClose={() => setIsStealthCloakOpen(false)}
-        />
-      </>
+      <PlayerView
+        item={activeItem}
+        allCatalog={mediaItems}
+        onBack={handleBack}
+        onSelectNext={handlePlay}
+        onSelectPrev={handlePlay}
+        isFavorite={favorites.includes(activeItem.id)}
+        onToggleFavorite={handleToggleFavorite}
+      />
     );
   }
 
@@ -297,16 +268,12 @@ export default function App() {
         totalItemsCount={mediaItems.length}
         onOpenAddModal={() => setIsAddModalOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onTriggerCloak={handleTriggerCloak}
         onRandomPick={handleRandomPick}
       />
 
       {/* Main Content Area */}
       {currentTab === 'youtube' ? (
-        <YouTubeView
-          onTriggerCloak={handleTriggerCloak}
-          savedCloakPreset={settings.cloakPreset}
-        />
+        <YouTubeView />
       ) : (
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
           {/* Section Heading */}
@@ -364,11 +331,6 @@ export default function App() {
         settings={settings}
         onSaveSettings={handleSaveSettings}
         onResetCatalog={handleResetToDefault}
-      />
-
-      <StealthCloakOverlay
-        isOpen={isStealthCloakOpen}
-        onClose={() => setIsStealthCloakOpen(false)}
       />
 
       {/* Cinema Footer */}

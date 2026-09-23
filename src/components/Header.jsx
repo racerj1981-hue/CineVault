@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { MovieIcon } from './MovieIcon';
 import { YouTubePlayIcon } from './YouTubeLogo';
-import { triggerPanicButton } from '../utils/cloaker';
 import searchIconAsset from '../assets/search-icon.png';
 
 // Inline base64 search icon data URI to guarantee 100% availability in GitHub Pages, offline, and firewalls
@@ -31,17 +30,6 @@ export const Header = ({
   onOpenSettings,
   onRandomPick,
 }) => {
-  // Panic shortcut listener (pressing ] or \ or `)
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === ']' || e.key === '`') {
-        triggerPanicButton();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   return (
     <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/80 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -193,7 +181,7 @@ export const Header = ({
             <button
               id="header-settings-btn"
               onClick={onOpenSettings}
-              title="Settings (Tab disguise, panic URL)"
+              title="Settings"
               className="p-2 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-xl transition cursor-pointer"
             >
               <Settings className="w-4 h-4 text-amber-400" />

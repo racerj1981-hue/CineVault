@@ -12,7 +12,7 @@ import {
   HardDriveDownload,
   ArrowDown
 } from 'lucide-react';
-import { getVideoThumbnail, getChannelAvatar, fetchYouTubeSearch } from '../../data/youtubeData';
+import { getVideoThumbnail, getChannelAvatar, getFallbackAvatarDataUri, fetchYouTubeSearch } from '../../data/youtubeData';
 import { isVideoSavedOffline } from '../../utils/youtubeProfilesAndOffline';
 import { YouTubePlayIcon } from '../YouTubeLogo';
 
@@ -174,7 +174,7 @@ export const YouTubeSearchPage = ({
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             e.currentTarget.onerror = null;
-                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(item.channel || 'YT')}&background=27272a&color=f59e0b&size=160&bold=true`;
+                            e.currentTarget.src = getFallbackAvatarDataUri(item.channel || 'YT');
                           }}
                         />
                       </div>

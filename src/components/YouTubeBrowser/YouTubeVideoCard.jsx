@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Play, ListPlus, ExternalLink, CheckCircle2, Tag, HardDriveDownload } from 'lucide-react';
-import { getVideoThumbnail, getChannelAvatar } from '../../data/youtubeData';
-import { isVideoSavedOffline, toggleSaveVideoOffline } from '../../utils/youtubeProfilesAndOffline';
+import { getVideoThumbnail, getChannelAvatar, getFallbackAvatarDataUri } from '../../data/youtubeData';
+import { isVideoSavedOffline, toggleSaveVideoOffline, getVideoProfile } from '../../utils/youtubeProfilesAndOffline';
 
 const VERIFIED_CHANNELS = new Set([
   'blender foundation',
@@ -44,12 +44,24 @@ export const YouTubeVideoCard = ({
   if (!video) return null;
 
   const [isSavedOffline, setIsSavedOffline] = useState(isOfflineProp || video.savedOffline || false);
+  const [videoProfile, setVideoProfile] = useState(() => getVideoProfile(video?.id));
 
   useEffect(() => {
     if (video?.id) {
       setIsSavedOffline(isOfflineProp !== undefined ? isOfflineProp : isVideoSavedOffline(video.id));
+      setVideoProfile(getVideoProfile(video.id));
     }
   }, [video?.id, isOfflineProp]);
+
+  useEffect(() => {
+    const handleProfileUpdate = (e) => {
+      if (e.detail?.videoId === video?.id) {
+        setVideoProfile(e.detail.data || getVideoProfile(video.id));
+      }
+    };
+    window.addEventListener('cinevault_video_profile_updated', handleProfileUpdate);
+    return () => window.removeEventListener('cinevault_video_profile_updated', handleProfileUpdate);
+  }, [video?.id]);
 
   const thumbUrl = getVideoThumbnail(video, video.thumbnail);
   const avatarUrl = getChannelAvatar(video.channel, video);
@@ -98,7 +110,7 @@ export const YouTubeVideoCard = ({
           </div>
         )}
 
-        {/* Badges: Guaranteed & Offline */}
+        {/* Badges: Guaranteed, Offline & Profile Status */}
         <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
           {video.isGuaranteed && (
             <div className="px-2 py-0.5 rounded-md bg-emerald-500/90 text-zinc-950 text-[10px] font-black uppercase tracking-wider shadow-md backdrop-blur-xs flex items-center gap-1">
@@ -110,6 +122,12 @@ export const YouTubeVideoCard = ({
             <div className="px-1.5 py-0.5 rounded-md bg-cyan-950/90 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold shadow-md backdrop-blur-xs flex items-center gap-1">
               <HardDriveDownload className="w-2.5 h-2.5" />
               <span>Offline Ready</span>
+            </div>
+          )}
+          {videoProfile?.status && videoProfile.status !== 'none' && (
+            <div className="px-1.5 py-0.5 rounded-md bg-amber-500/90 text-zinc-950 text-[10px] font-bold shadow-md backdrop-blur-xs flex items-center gap-1">
+              <Tag className="w-2.5 h-2.5" />
+              <span className="capitalize">{videoProfile.status.replace('_', ' ')}</span>
             </div>
           )}
         </div>
@@ -192,9 +210,9 @@ export const YouTubeVideoCard = ({
             referrerPolicy="no-referrer"
             className="w-full h-full object-cover"
             onError={(e) => {
-              // Fallback to stylized creator initial badge if network times out
+              // Instant SVG fallback with creator initials (zero network required)
               e.currentTarget.onerror = null;
-              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(video.channel || 'YT')}&background=27272a&color=f59e0b&size=160&bold=true`;
+              e.currentTarget.src = getFallbackAvatarDataUri(video.channel || 'YT');
             }}
           />
         </div>
