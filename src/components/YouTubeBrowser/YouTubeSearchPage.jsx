@@ -130,11 +130,11 @@ export const YouTubeSearchPage = ({
       {/* Results List */}
       {!isLoading && activeList.length > 0 && (
         <div className="space-y-4">
-          {activeList.map((item) => {
+          {activeList.map((item, idx) => {
             const thumbUrl = getVideoThumbnail(item.id, item.thumbnail);
             return (
               <div
-                key={item.id}
+                key={`${item.id}-${item.instanceKey || idx}`}
                 onClick={() => onSelectVideo(item)}
                 className="group flex flex-col sm:flex-row gap-4 p-3 rounded-2xl bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-850 hover:border-amber-400/50 transition cursor-pointer"
               >

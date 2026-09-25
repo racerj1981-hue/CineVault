@@ -639,13 +639,13 @@ export const YouTubeWatchPage = ({
           </div>
 
           <div className="space-y-3">
-            {recommendedVideos.map((rec) => {
+            {recommendedVideos.map((rec, idx) => {
               const thumb = getVideoThumbnail(rec.id, rec.thumbnail);
               const avatar = getChannelAvatar(rec.channel, rec);
 
               return (
                 <div
-                  key={rec.id}
+                  key={`${rec.id}-${idx}`}
                   onClick={() => onSelectVideo(rec)}
                   className="group flex gap-2.5 p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-850 hover:border-amber-400/40 transition cursor-pointer"
                 >

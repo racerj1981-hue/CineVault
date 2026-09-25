@@ -878,7 +878,7 @@ export const YouTubeView = () => {
                 <div className="space-y-2.5 max-w-3xl">
                   {queue.map((item, idx) => (
                     <div
-                      key={item.id}
+                      key={`${item.id}-${idx}`}
                       className="flex items-center gap-3 p-2.5 rounded-xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-850 transition group"
                     >
                       <span className="font-mono text-xs text-zinc-500 w-4">{idx + 1}</span>

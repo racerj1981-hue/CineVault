@@ -952,9 +952,10 @@ export function generateInfiniteYouTubeBatch(category = 'All', seed = Date.now()
     const age = UPLOAD_AGE_VARIANTS[Math.floor(rng() * UPLOAD_AGE_VARIANTS.length)];
     
     // Create unique item with deterministic instance key so infinite scroll never conflicts
+    const uid = Math.random().toString(36).slice(2, 8);
     batch.push({
       ...baseVideo,
-      instanceKey: `${baseVideo.id}-p${page}-i${i}-${Math.floor(rng() * 10000)}`,
+      instanceKey: `${baseVideo.id}-p${page}-i${i}-${Math.floor(rng() * 10000)}-${uid}`,
       uploadedAt: baseVideo.uploadedAt || age,
       isInfiniteBatch: page > 1
     });

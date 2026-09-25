@@ -112,9 +112,9 @@ export const SettingsModal = ({
             <div className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 flex items-center justify-between gap-4 mb-3">
               <div className="flex items-center gap-3">
                 <img
-                  src="https://i.ibb.co/zTmL4rYd/Screenshot-2026-09-10-181041-1.png"
+                  src="./favicon.png"
                   alt="CineVault App Icon"
-                  className="w-10 h-10 rounded-xl shadow-md border border-zinc-800 object-contain bg-zinc-950 p-0.5"
+                  className="w-10 h-10 rounded-xl shadow-md border border-zinc-800 object-cover bg-zinc-950"
                 />
                 <div>
                   <span className="text-xs font-bold text-white block">Official CineVault Website Icon</span>

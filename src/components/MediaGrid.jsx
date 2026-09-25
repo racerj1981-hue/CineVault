@@ -31,9 +31,9 @@ export const MediaGrid = ({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-      {items.map((item) => (
+      {items.map((item, idx) => (
         <MediaCard
-          key={item.id}
+          key={`${item.id || 'item'}-${idx}`}
           item={item}
           onPlay={onPlay}
           isFavorite={favorites.includes(item.id)}

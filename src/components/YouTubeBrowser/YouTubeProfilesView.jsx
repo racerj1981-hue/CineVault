@@ -247,12 +247,12 @@ export const YouTubeProfilesView = ({
       {/* Videos List / Grid */}
       {displayedVideos.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {displayedVideos.map((video) => {
+          {displayedVideos.map((video, idx) => {
             const isSaved = offlineVideos.some((ov) => ov.id === video.id);
             const prof = videoProfiles[video.id];
 
             return (
-              <div key={video.id} className="relative group">
+              <div key={`${video.id}-${idx}`} className="relative group">
                 <YouTubeVideoCard
                   video={video}
                   onSelectVideo={onSelectVideo}

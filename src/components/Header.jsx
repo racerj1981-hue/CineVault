@@ -43,8 +43,12 @@ export const Header = ({
                 if (showFavoritesOnly) onToggleFavorites();
               }}
             >
-              <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-amber-600 to-rose-600 text-zinc-950 font-black shadow-lg shadow-amber-500/20">
-                <MovieIcon className="w-5 h-5 sm:w-6 sm:h-6 drop-shadow" />
+              <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-lg shadow-amber-500/20 border border-amber-500/30 bg-zinc-900 shrink-0">
+                <img
+                  src="./favicon.png"
+                  alt="CineVault"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">

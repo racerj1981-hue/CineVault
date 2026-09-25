@@ -72,6 +72,9 @@ export const YouTubeHomeFeed = ({
   const [page, setPage] = useState(1);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+  const pageRef = useRef(1);
+  const isLoadingMoreRef = useRef(false);
+
   const loadedCategoriesRef = useRef(new Set());
   const algoProfileRef = useRef(algoProfile);
   const scrollContainerRef = useRef(null);
@@ -86,6 +89,7 @@ export const YouTubeHomeFeed = ({
     if (feedRandomSeed) {
       setRandomSeed(feedRandomSeed);
       setPage(1);
+      pageRef.current = 1;
       setInfiniteVideos([]);
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
@@ -99,6 +103,7 @@ export const YouTubeHomeFeed = ({
       const nextSeed = e.detail?.seed || Date.now();
       setRandomSeed(nextSeed);
       setPage(1);
+      pageRef.current = 1;
       setInfiniteVideos([]);
       loadCategoryFeed(selectedCategory, true);
       if (scrollContainerRef.current) {
@@ -181,6 +186,8 @@ export const YouTubeHomeFeed = ({
     loadCategoryFeed(selectedCategory);
     // Reset infinite scroll on category switch
     setPage(1);
+    pageRef.current = 1;
+    isLoadingMoreRef.current = false;
     setInfiniteVideos([]);
     setRandomSeed(Date.now() + Math.floor(Math.random() * 1000));
     if (scrollContainerRef.current) {
@@ -190,10 +197,13 @@ export const YouTubeHomeFeed = ({
 
   // Infinite Scroll Loader: triggers when scrolling near the bottom
   const handleLoadMore = useCallback(async () => {
-    if (isLoadingMore) return;
+    if (isLoadingMoreRef.current) return;
+    isLoadingMoreRef.current = true;
     setIsLoadingMore(true);
 
-    const nextPage = page + 1;
+    const nextPage = pageRef.current + 1;
+    pageRef.current = nextPage;
+
     try {
       let freshVideos = [];
       if (!isOfflineMode) {
@@ -213,17 +223,40 @@ export const YouTubeHomeFeed = ({
       const generated = generateInfiniteYouTubeBatch(selectedCategory, randomSeed, nextPage, 12);
       const newBatch = [...validFetched, ...generated];
 
-      setInfiniteVideos((prev) => [...prev, ...newBatch]);
+      setInfiniteVideos((prev) => {
+        const seen = new Set(prev.map((v) => v.instanceKey || v.id));
+        const unique = [];
+        newBatch.forEach((v) => {
+          const k = v.instanceKey || v.id;
+          if (!seen.has(k)) {
+            seen.add(k);
+            unique.push(v);
+          }
+        });
+        return [...prev, ...unique];
+      });
       setPage(nextPage);
     } catch (err) {
       console.warn('Failed to fetch more infinite videos, using local generation:', err);
       const generated = generateInfiniteYouTubeBatch(selectedCategory, randomSeed, nextPage, 12);
-      setInfiniteVideos((prev) => [...prev, ...generated]);
+      setInfiniteVideos((prev) => {
+        const seen = new Set(prev.map((v) => v.instanceKey || v.id));
+        const unique = [];
+        generated.forEach((v) => {
+          const k = v.instanceKey || v.id;
+          if (!seen.has(k)) {
+            seen.add(k);
+            unique.push(v);
+          }
+        });
+        return [...prev, ...unique];
+      });
       setPage(nextPage);
     } finally {
+      isLoadingMoreRef.current = false;
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, page, isOfflineMode, selectedCategory, allAvailableVideos, infiniteVideos, randomSeed]);
+  }, [isOfflineMode, selectedCategory, allAvailableVideos, infiniteVideos, randomSeed]);
 
   // IntersectionObserver to auto-load more videos when reaching bottom sentinel
   useEffect(() => {
@@ -232,7 +265,7 @@ export const YouTubeHomeFeed = ({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isLoadingMore) {
+        if (entries[0].isIntersecting && !isLoadingMoreRef.current) {
           handleLoadMore();
         }
       },
@@ -245,7 +278,7 @@ export const YouTubeHomeFeed = ({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [handleLoadMore, isLoadingMore]);
+  }, [handleLoadMore]);
 
   // Reload profile when algorithmic updates or storage changes happen
   useEffect(() => {
@@ -301,9 +334,18 @@ export const YouTubeHomeFeed = ({
     return getAlgorithmicFeed(allAvailableVideos, algoProfile, selectedCategory, randomSeed);
   }, [allAvailableVideos, algoProfile, selectedCategory, randomSeed]);
 
-  // Combined Grid Videos (Base + Infinite Batches)
+  // Combined Grid Videos (Base + Infinite Batches with strict key deduplication)
   const displayGridVideos = useMemo(() => {
-    return [...baseRankedVideos, ...infiniteVideos];
+    const seen = new Set();
+    const list = [];
+    [...baseRankedVideos, ...infiniteVideos].forEach((v) => {
+      const k = v.instanceKey || v.id;
+      if (!seen.has(k)) {
+        seen.add(k);
+        list.push(v);
+      }
+    });
+    return list;
   }, [baseRankedVideos, infiniteVideos]);
 
   // For Shelves view: videos not already in the shelves + infinite videos for endless scrolling
@@ -313,7 +355,16 @@ export const YouTubeHomeFeed = ({
       s.videos.forEach((v) => usedInShelves.add(v.id));
     });
     const unusedBase = baseRankedVideos.filter((v) => !usedInShelves.has(v.id));
-    return [...unusedBase, ...infiniteVideos];
+    const seen = new Set(usedInShelves);
+    const list = [];
+    [...unusedBase, ...infiniteVideos].forEach((v) => {
+      const k = v.instanceKey || v.id;
+      if (!seen.has(k)) {
+        seen.add(k);
+        list.push(v);
+      }
+    });
+    return list;
   }, [algorithmicSections, baseRankedVideos, infiniteVideos]);
 
   const allCategories = useMemo(() => {
@@ -526,7 +577,7 @@ export const YouTubeHomeFeed = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
                   {section.videos.map((video, idx) => (
                     <YouTubeVideoCard
-                      key={video.instanceKey || `${section.id}-${video.id}-${idx}`}
+                      key={`shelf-${section.id}-${video.instanceKey || video.id}-${idx}`}
                       video={video}
                       onSelectVideo={onSelectVideo}
                       onOpenVideoInNewTab={onOpenVideoInNewTab}
@@ -559,7 +610,7 @@ export const YouTubeHomeFeed = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
                 {moreVideosForShelves.map((video, idx) => (
                   <YouTubeVideoCard
-                    key={video.instanceKey || `${video.id}-shelf-more-${idx}`}
+                    key={`shelf-more-${video.instanceKey || video.id}-${idx}`}
                     video={video}
                     onSelectVideo={onSelectVideo}
                     onOpenVideoInNewTab={onOpenVideoInNewTab}
@@ -576,7 +627,7 @@ export const YouTubeHomeFeed = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
           {displayGridVideos.map((video, idx) => (
             <YouTubeVideoCard
-              key={video.instanceKey || `${video.id}-grid-${idx}`}
+              key={`grid-${video.instanceKey || video.id}-${idx}`}
               video={video}
               onSelectVideo={onSelectVideo}
               onOpenVideoInNewTab={onOpenVideoInNewTab}
