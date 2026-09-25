@@ -84,7 +84,7 @@ export function resolveMediaThumbnail(itemOrUrl, fallbackUrl) {
     if (item.thumbnail && !item.thumbnail.includes('/api/')) {
       return resolveAssetUrl(item.thumbnail);
     }
-    return `https://archive.org/services/img/${encodeURIComponent(item.archiveId)}`;
+    return fallbackUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80';
   }
 
   if (item.thumbnail) {

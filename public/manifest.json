@@ -12,9 +12,15 @@
   "categories": ["entertainment", "movies", "video"],
   "icons": [
     {
-      "src": "favicon.svg",
-      "sizes": "64x64 128x128 256x256 512x512",
-      "type": "image/svg+xml",
+      "src": "favicon.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
       "purpose": "any"
     },
     {
@@ -36,14 +42,8 @@
       "purpose": "maskable"
     },
     {
-      "src": "icon-128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
       "src": "icon.svg",
-      "sizes": "64x64",
+      "sizes": "48x48",
       "type": "image/svg+xml",
       "purpose": "any"
     }

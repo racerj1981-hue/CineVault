@@ -89,7 +89,7 @@ export const YouTubeVideoCard = ({
             if (!e.currentTarget.dataset.triedFallback1) {
               e.currentTarget.dataset.triedFallback1 = 'true';
               if (video.archiveId) {
-                e.currentTarget.src = `https://archive.org/services/img/${encodeURIComponent(video.archiveId)}`;
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80';
               } else if (video.id && /^[a-zA-Z0-9_-]{11}$/.test(video.id)) {
                 e.currentTarget.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
               } else {

@@ -991,7 +991,7 @@ export function getVideoThumbnail(videoIdOrObject, defaultThumbnail) {
     if (fallback && !fallback.includes('/api/')) {
       return resolveAssetUrl(fallback);
     }
-    return `https://archive.org/services/img/${encodeURIComponent(archiveId)}`;
+    return 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80';
   }
 
   // Clean corrupted fallback URLs that previously saved /api/youtube/thumbnail to localStorage

@@ -23,9 +23,9 @@ export const MediaCard = ({
   const handleImageError = () => {
     if (fallbackStage === 0) {
       setFallbackStage(1);
-      // Fallback 1: Archive.org official poster for archive items
+      // Fallback 1: High quality cinema placeholder (avoid archive.org to prevent Linwize filter triggers)
       if (item.archiveId) {
-        setThumbSrc(`https://archive.org/services/img/${encodeURIComponent(item.archiveId)}`);
+        setThumbSrc('https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80');
         return;
       }
       // If YouTube 11-char ID

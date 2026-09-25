@@ -92,17 +92,23 @@ export const PlayerView = ({
   };
 
   const rawCandidate = extractDirectCandidate(item, iframeSrc);
+  const movieIdentifier = item?.archiveId || item?.id;
   
   // Linwize Cloud Relay URL: routes media stream through local Cloud Run origin with Byte Range support
-  const linwizeRelayUrl = item?.archiveId
-    ? `/api/movie/stream/${encodeURIComponent(item.archiveId)}${rawCandidate ? `?url=${encodeURIComponent(rawCandidate)}` : ''}`
-    : (rawCandidate ? `/api/proxy/stream?url=${encodeURIComponent(rawCandidate)}` : '');
+  // Avoid passing raw external archive.org query params to prevent Linwize query-string inspection blocks
+  const linwizeRelayUrl = movieIdentifier
+    ? `/api/movie/stream/${encodeURIComponent(movieIdentifier)}`
+    : (rawCandidate ? `/api/proxy/stream?b64=${btoa(encodeURIComponent(rawCandidate))}` : '');
 
   const activeStreamUrl = (streamNode === 'relay' && linwizeRelayUrl)
-    ? linwizeRelayUrl
+    ? (streamAttempt > 0 ? `${linwizeRelayUrl}?r=${streamAttempt}` : linwizeRelayUrl)
     : (streamNode === 'cors' && rawCandidate)
     ? `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawCandidate)}`
-    : (rawCandidate || resolvedStreamUrl || linwizeRelayUrl);
+    : (linwizeRelayUrl || rawCandidate || resolvedStreamUrl);
+
+  const unblockedPlayerUrl = movieIdentifier
+    ? `/api/movie/player/${encodeURIComponent(movieIdentifier)}`
+    : iframeSrc;
 
   const isDirectCandidate = !!(rawCandidate || resolvedStreamUrl || linwizeRelayUrl);
 
@@ -240,13 +246,14 @@ export const PlayerView = ({
                     setStreamError(false);
                     setIsVideoLoading(true);
                   }}
-                  title={streamNode === 'relay' ? 'Linwize Filter Bypass Active. Click to switch to Direct Origin.' : 'Direct Origin Active. Click to switch to Linwize Relay.'}
-                  className={`px-2.5 py-1 rounded-lg transition font-medium cursor-pointer text-[11px] flex items-center gap-1 border ${
+                  title={streamNode === 'relay' ? 'Linwize Relay Active (Zero-block streaming). Click to switch to Direct Origin.' : 'Direct Origin Active. Click to switch to Linwize Relay.'}
+                  className={`px-2.5 py-1 rounded-lg transition font-medium cursor-pointer text-[11px] flex items-center gap-1.5 border ${
                     streamNode === 'relay'
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
                       : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
                   }`}
                 >
+                  <span className={`w-1.5 h-1.5 rounded-full ${streamNode === 'relay' ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'}`} />
                   <span>{streamNode === 'relay' ? '🛡️ Linwize Relay' : '⚡ Direct Origin'}</span>
                 </button>
               )}
@@ -360,7 +367,9 @@ export const PlayerView = ({
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-400 mt-1.5 font-medium">Connecting to direct origin • HD 1080p</p>
+                  <p className="text-xs text-zinc-400 mt-1.5 font-medium">
+                    {streamNode === 'relay' ? '🛡️ Connecting via Linwize Relay • HD 1080p' : 'Connecting to direct origin • HD 1080p'}
+                  </p>
 
                   {/* Shimmering Golden Progress Wave */}
                   <div className="w-48 h-1 bg-zinc-800/80 rounded-full overflow-hidden mt-4 relative">
@@ -386,15 +395,14 @@ export const PlayerView = ({
                   onCanPlay={() => setIsVideoLoading(false)}
                   onPlaying={() => setIsVideoLoading(false)}
                   onError={() => {
-                    // Try direct origin if relay fails
-                    if (streamNode === 'relay' && rawCandidate) {
-                      setStreamNode('direct');
+                    // In Linwize relay mode, automatically retry up to 2 times
+                    if (streamNode === 'relay' && streamAttempt < 2) {
                       setStreamAttempt((prev) => prev + 1);
                       setIsVideoLoading(true);
                       return;
                     }
-                    // Auto-fallback to official embed player so movies never crash
-                    if (iframeSrc && playbackMode === 'direct') {
+                    // Auto-fallback to local unblocked HTML5 player iframe on same origin
+                    if (playbackMode === 'direct') {
                       setPlaybackMode('embed');
                       setIsIframeLoading(true);
                       setIsVideoLoading(false);
@@ -471,11 +479,11 @@ export const PlayerView = ({
                   </div>
                 )}
               </div>
-            ) : iframeSrc ? (
+            ) : (unblockedPlayerUrl || iframeSrc) ? (
               <div className="w-full h-full relative">
                 <iframe
                   key={`iframe-${item.id}-${reloadKey}`}
-                  src={iframeSrc}
+                  src={unblockedPlayerUrl || iframeSrc}
                   title={item.title}
                   onLoad={() => setIsIframeLoading(false)}
                   className={`w-full h-full border-0 absolute inset-0 transition-opacity duration-500 ${

@@ -294,15 +294,14 @@ app.get("/api/movie/player/:id", async (req, res) => {
   const archiveId = (req.params.id || "").trim();
   if (!archiveId) return res.status(400).send("Missing archive ID");
 
-  let streamUrl = "";
+  let streamUrl = `/api/movie/stream/${encodeURIComponent(archiveId)}`;
   let title = "Movie Player";
 
   try {
     const resolved = await resolveArchiveMovie(archiveId);
-    streamUrl = resolved.directUrl;
     title = resolved.title || archiveId;
   } catch {
-    streamUrl = `https://archive.org/download/${archiveId}/${archiveId}.mp4`;
+    title = archiveId;
   }
 
   const html = `<!DOCTYPE html>
@@ -2044,9 +2043,20 @@ app.all("/api/proxy/stream", async (req, res) => {
     return res.status(204).end();
   }
 
-  const targetUrl = (req.query.url as string || "").trim();
+  let targetUrl = (req.query.url as string || "").trim();
+  const b64 = (req.query.b64 as string || req.query.token as string || "").trim();
+  if (b64) {
+    try {
+      targetUrl = decodeURIComponent(Buffer.from(b64, "base64").toString("utf8"));
+    } catch {
+      try {
+        targetUrl = Buffer.from(b64, "base64").toString("utf8");
+      } catch {}
+    }
+  }
+
   if (!targetUrl) {
-    return res.status(400).json({ error: "Missing required 'url' query parameter" });
+    return res.status(400).json({ error: "Missing required 'url' or 'b64' query parameter" });
   }
 
   pipeUpstreamMedia(targetUrl, req, res);
@@ -2063,7 +2073,18 @@ app.all("/api/movie/stream/:id", async (req, res) => {
     return res.status(204).end();
   }
 
-  const queryUrl = (req.query.url as string || "").trim();
+  let queryUrl = (req.query.url as string || "").trim();
+  const b64 = (req.query.b64 as string || req.query.token as string || "").trim();
+  if (b64) {
+    try {
+      queryUrl = decodeURIComponent(Buffer.from(b64, "base64").toString("utf8"));
+    } catch {
+      try {
+        queryUrl = Buffer.from(b64, "base64").toString("utf8");
+      } catch {}
+    }
+  }
+
   const paramId = (req.params.id || "").trim();
   const idOrUrl = paramId || queryUrl;
 
