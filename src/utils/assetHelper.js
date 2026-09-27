@@ -38,7 +38,7 @@ export function resolveAssetUrl(path) {
     }
   }
 
-  const base = import.meta.env.BASE_URL || './';
+  const base = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || './';
   const normalizedBase = base.endsWith('/') ? base : base + '/';
   return `${normalizedBase}${cleanPath}`;
 }

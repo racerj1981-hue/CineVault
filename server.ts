@@ -199,12 +199,44 @@ const DEFAULT_VERIFIED_MOVIES: Record<string, { directUrl: string; fileName: str
   }
 };
 
+// Direct CDN storage node cache to bypass 3-4s 302 redirects for instant cloud relay streaming
+const directStorageCache = new Map<string, { cdnUrl: string; expires: number }>();
+
+const INITIAL_CDN_STORAGE_MAP: Record<string, string> = {
+  "https://archive.org/download/tom-and-jerry-the-movie-1992_202206/Tom%20and%20Jerry%20-%20The%20Movie%20%5B1992%5D.mp4": "https://dn720001.ca.archive.org/0/items/tom-and-jerry-the-movie-1992_202206/Tom%20and%20Jerry%20-%20The%20Movie%20%5B1992%5D.mp4",
+  "https://archive.org/download/tom-and-jerry-the-fast-and-the-furry-2005-1080p-brrip-a-release-lounge-h-264/Tom%20and%20Jerry%20The%20Fast%20and%20the%20Furry%202005%201080p%20BRRip%20%5BA%20Release-Lounge%20H264%5D.mp4": "https://dn720407.ca.archive.org/0/items/tom-and-jerry-the-fast-and-the-furry-2005-1080p-brrip-a-release-lounge-h-264/Tom%20and%20Jerry%20The%20Fast%20and%20the%20Furry%202005%201080p%20BRRip%20%5BA%20Release-Lounge%20H264%5D.mp4",
+  "https://archive.org/download/Night.Of.The.Living.Dead_1080p/NightOfTheLivingDead_720p.mp4": "https://dn711006.ca.archive.org/0/items/Night.Of.The.Living.Dead_1080p/NightOfTheLivingDead_720p.mp4",
+  "https://archive.org/download/BigBuckBunny_328/BigBuckBunny_512kb.mp4": "https://dn801203.us.archive.org/0/items/BigBuckBunny_328/BigBuckBunny_512kb.mp4",
+  "https://archive.org/download/Tears-of-Steel/tears_of_steel_720p.mp4": "https://dn710301.ca.archive.org/0/items/Tears-of-Steel/tears_of_steel_720p.mp4",
+  "https://archive.org/download/Charade_1953/CHARADE_1953.mp4": "https://dn710608.ca.archive.org/0/items/Charade_1953/CHARADE_1953.mp4",
+  "https://archive.org/download/Levoyagedanslalune/Le_voyage_dans_la_lune_A_trip_to_the_moon__Georges_Mlis_1902_512kb.mp4": "https://dn600305.us.archive.org/0/items/Levoyagedanslalune/Le_voyage_dans_la_lune_A_trip_to_the_moon__Georges_Mlis_1902_512kb.mp4",
+  "https://archive.org/download/his_girl_friday/his_girl_friday.mp4": "https://dn800306.us.archive.org/0/items/his_girl_friday/his_girl_friday.mp4",
+  "https://archive.org/download/ThePhantomoftheOpera/Phantom_of_the_Opera_512kb.mp4": "https://dn600306.us.archive.org/0/items/ThePhantomoftheOpera/Phantom_of_the_Opera_512kb.mp4",
+  "https://archive.org/download/The_General_Buster_Keaton/The_General.mp4": "https://dn721803.ca.archive.org/0/items/The_General_Buster_Keaton/The_General.mp4",
+  "https://archive.org/download/Nosferatu_most_complete_version_93_mins./Nosferatu_1922_Symphony_of_Horror_512kb.mp4": "https://dn800304.us.archive.org/0/items/Nosferatu_most_complete_version_93_mins./Nosferatu_1922_Symphony_of_Horror_512kb.mp4",
+  "https://archive.org/download/CarnivalofSouls/CarnivalOfSouls.mp4": "https://dn720004.ca.archive.org/0/items/CarnivalofSouls/CarnivalOfSouls.mp4",
+  "https://archive.org/download/house_on_haunted_hill_ipod/house_on_haunted_hill.mp4": "https://dn710800.ca.archive.org/0/items/house_on_haunted_hill_ipod/house_on_haunted_hill.mp4",
+  "https://archive.org/download/TheLittleShopOfHorrors1960/The-Little-Shop-of-Horrors.mp4": "https://dn711209.ca.archive.org/0/items/TheLittleShopOfHorrors1960/The-Little-Shop-of-Horrors.mp4",
+  "https://archive.org/download/774-plan-9-from-outer-space/774-Plan9FromOuterSpace.mp4": "https://dn720401.ca.archive.org/0/items/774-plan-9-from-outer-space/774-Plan9FromOuterSpace.mp4",
+  "https://archive.org/download/gullivers_travels1939_divx/gullivers_travels1939.mp4": "https://dn710806.ca.archive.org/0/items/gullivers_travels1939_divx/gullivers_travels1939.mp4",
+  "https://archive.org/download/TheLastManOnEarth_72/the_last_man_on_earth.mp4": "https://dn711004.ca.archive.org/0/items/TheLastManOnEarth_72/the_last_man_on_earth.mp4",
+  "https://archive.org/download/Sintel/sintel-2048-surround.mp4": "https://dn601208.us.archive.org/0/items/Sintel/sintel-2048-surround.mp4"
+};
+
+for (const [orig, cdn] of Object.entries(INITIAL_CDN_STORAGE_MAP)) {
+  directStorageCache.set(orig, { cdnUrl: cdn, expires: Date.now() + 30 * 24 * 3600 * 1000 });
+}
+
 // Archive.org Movie Stream & Metadata Resolver
 // Resolves actual direct .mp4 streaming files for any Archive.org item to bypass patched/blocked iframes
 async function resolveArchiveMovie(archiveId: string) {
-  if (DEFAULT_VERIFIED_MOVIES[archiveId]) {
+  const normKey = (archiveId || "").toLowerCase().trim().replace(/[^a-z0-9]/g, "");
+  const directMatch = DEFAULT_VERIFIED_MOVIES[archiveId] || 
+    Object.entries(DEFAULT_VERIFIED_MOVIES).find(([k]) => k.toLowerCase().trim().replace(/[^a-z0-9]/g, "") === normKey)?.[1];
+
+  if (directMatch) {
     return {
-      ...DEFAULT_VERIFIED_MOVIES[archiveId],
+      ...directMatch,
       expires: Date.now() + 365 * 24 * 3600 * 1000
     };
   }
@@ -294,14 +326,15 @@ app.get("/api/movie/player/:id", async (req, res) => {
   const archiveId = (req.params.id || "").trim();
   if (!archiveId) return res.status(400).send("Missing archive ID");
 
-  let streamUrl = `/api/movie/stream/${encodeURIComponent(archiveId)}`;
+  let streamUrl = "";
   let title = "Movie Player";
 
   try {
     const resolved = await resolveArchiveMovie(archiveId);
+    streamUrl = resolved.directUrl;
     title = resolved.title || archiveId;
   } catch {
-    title = archiveId;
+    streamUrl = `https://archive.org/download/${archiveId}/${archiveId}.mp4`;
   }
 
   const html = `<!DOCTYPE html>
@@ -321,6 +354,9 @@ app.get("/api/movie/player/:id", async (req, res) => {
     .controls { display: flex; gap: 8px; pointer-events: auto; }
     .btn { background: rgba(30, 30, 40, 0.85); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; transition: 0.15s; }
     .btn:hover { background: #f59e0b; color: #000; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes spinRev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+    @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
   </style>
 </head>
 <body>
@@ -331,10 +367,39 @@ app.get("/api/movie/player/:id", async (req, res) => {
         <button class="btn" onclick="history.back()">Back to App</button>
       </div>
     </div>
-    <video controls autoplay playsinline src="${streamUrl}">
+    <div id="loader-overlay" style="position:absolute; inset:0; z-index:30; background:#09090b; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; transition:opacity 0.4s ease; pointer-events:auto;">
+      <div style="position:relative; width:96px; height:96px; margin-bottom:20px; display:flex; align-items:center; justify-content:center;">
+        <div style="position:absolute; inset:0; border-radius:50%; border:2px dashed rgba(245,158,11,0.4); animation:spin 8s linear infinite;"></div>
+        <div style="position:absolute; inset:8px; border-radius:50%; border:2px solid transparent; border-top-color:#fbbf24; border-right-color:rgba(245,158,11,0.4); animation:spinRev 4s linear infinite;"></div>
+        <div style="width:56px; height:56px; border-radius:50%; background:#18181b; border:1px solid rgba(245,158,11,0.5); display:flex; align-items:center; justify-content:center; box-shadow:0 10px 25px rgba(245,158,11,0.25);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m10 11 5 3-5 3v-6Z"/></svg>
+        </div>
+      </div>
+      <div style="font-size:16px; font-weight:700; color:#fff; letter-spacing:0.025em; margin-bottom:4px;">Loading Movie File...</div>
+      <div style="font-size:14px; font-weight:600; color:#d4d4d8; max-width:380px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:8px;">${title}</div>
+      <div style="font-size:12px; color:#a1a1aa; font-weight:500; margin-bottom:16px;">Direct MP4 File &middot; Hardware Accelerated &middot; Lossless Stream</div>
+      <div style="width:240px; height:6px; background:#18181b; border:1px solid #27272a; border-radius:9999px; overflow:hidden; position:relative;">
+        <div style="position:absolute; inset:0; background:linear-gradient(90deg, transparent, #f59e0b, transparent); animation:shimmer 1.8s infinite linear;"></div>
+      </div>
+    </div>
+    <video id="main-video" controls autoplay playsinline src="${streamUrl}">
       Your browser does not support the video tag.
     </video>
   </div>
+  <script>
+    const vid = document.getElementById('main-video');
+    const loader = document.getElementById('loader-overlay');
+    if (vid && loader) {
+      const hideLoader = () => {
+        loader.style.opacity = '0';
+        loader.style.pointerEvents = 'none';
+        setTimeout(() => loader.remove(), 400);
+      };
+      vid.addEventListener('canplay', hideLoader, { once: true });
+      vid.addEventListener('loadeddata', hideLoader, { once: true });
+      vid.addEventListener('playing', hideLoader, { once: true });
+    }
+  </script>
 </body>
 </html>`;
 
@@ -1840,11 +1905,20 @@ function pipeUpstreamMedia(
   targetUrl: string,
   req: express.Request,
   res: express.Response,
-  redirectCount = 0
+  redirectCount = 0,
+  customFileName?: string
 ) {
   if (redirectCount > 6) {
     if (!res.headersSent) res.status(508).json({ error: "Too many upstream redirects" });
     return;
+  }
+
+  // Instant direct storage cache resolution to skip 302 redirects completely
+  if (redirectCount === 0) {
+    const cachedCdn = directStorageCache.get(targetUrl);
+    if (cachedCdn && cachedCdn.expires > Date.now()) {
+      targetUrl = cachedCdn.cdnUrl;
+    }
   }
 
   let parsedUrl: URL;
@@ -1858,18 +1932,16 @@ function pipeUpstreamMedia(
   const clientRange = req.headers.range;
   const protocolModule = parsedUrl.protocol === "http:" ? http : https;
 
-  // Use legitimate browser User-Agent and standard Archive.org referer to prevent CDN hotlink blocks
-  let ref = parsedUrl.origin + "/";
-  if (parsedUrl.hostname.includes("archive.org")) {
-    ref = "https://archive.org/";
-  }
-
   const upstreamHeaders: Record<string, string> = {
     "User-Agent": (req.headers["user-agent"] as string) || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "*/*",
-    "Accept-Encoding": "identity",
-    "Referer": ref
+    "Accept-Encoding": "identity"
   };
+
+  // Only pass standard Archive referer for Archive.org storage nodes to prevent hotlink blocks
+  if (parsedUrl.hostname.includes("archive.org")) {
+    upstreamHeaders["Referer"] = "https://archive.org/";
+  }
 
   if (clientRange) {
     upstreamHeaders["Range"] = clientRange;
@@ -1878,31 +1950,29 @@ function pipeUpstreamMedia(
   let clientAborted = false;
   let hasEnded = false;
   let isStreaming = false;
-  let activeUpstreamRes: http.IncomingMessage | null = null;
 
-  const onClientClose = () => {
-    clientAborted = true;
-    hasEnded = true;
-    if (activeUpstreamRes && !activeUpstreamRes.destroyed) {
+  if (redirectCount === 0) {
+    const onClientClose = () => {
+      if (hasEnded) return;
+      clientAborted = true;
+      hasEnded = true;
       try {
-        activeUpstreamRes.destroy();
+        const curReq = (req as any)._activeUpstreamReq;
+        if (curReq && !curReq.destroyed) curReq.destroy();
       } catch {}
-    }
-    if (!upstreamReq.destroyed) {
       try {
-        upstreamReq.destroy();
+        const curRes = (req as any)._activeUpstreamRes;
+        if (curRes && !curRes.destroyed) curRes.destroy();
       } catch {}
-    }
-  };
-
-  req.once("close", onClientClose);
-  res.once("close", onClientClose);
+    };
+    req.once("close", onClientClose);
+  }
 
   const upstreamReq = protocolModule.request(parsedUrl, {
     method: req.method === "HEAD" ? "HEAD" : "GET",
     headers: upstreamHeaders
   }, (upstreamRes) => {
-    activeUpstreamRes = upstreamRes;
+    (req as any)._activeUpstreamRes = upstreamRes;
     isStreaming = true;
     // CRITICAL: Disable socket inactivity timeout so pausing video or buffering doesn't abort stream
     upstreamReq.setTimeout(0);
@@ -1912,8 +1982,9 @@ function pipeUpstreamMedia(
     // Seamlessly follow 3xx redirects internally so Linwize never sees destination CDN node
     if ([301, 302, 303, 307, 308].includes(statusCode) && upstreamRes.headers.location) {
       const nextLocation = new URL(upstreamRes.headers.location, targetUrl).toString();
+      directStorageCache.set(targetUrl, { cdnUrl: nextLocation, expires: Date.now() + 30 * 24 * 3600 * 1000 });
       upstreamRes.resume(); // consume and discard response data to free socket
-      return pipeUpstreamMedia(nextLocation, req, res, redirectCount + 1);
+      return pipeUpstreamMedia(nextLocation, req, res, redirectCount + 1, customFileName);
     }
 
     // Auto-heal 404 / 403 on archive.org downloads: if a file path is wrong, resolve real file from archiveId
@@ -1923,7 +1994,7 @@ function pipeUpstreamMedia(
         upstreamRes.resume();
         resolveArchiveMovie(archiveMatch[1]).then(resolved => {
           if (resolved && resolved.directUrl && resolved.directUrl !== targetUrl) {
-            return pipeUpstreamMedia(resolved.directUrl, req, res, redirectCount + 1);
+            return pipeUpstreamMedia(resolved.directUrl, req, res, redirectCount + 1, customFileName || resolved.fileName);
           }
           if (!res.headersSent) res.status(statusCode).end();
         }).catch(() => {
@@ -1949,25 +2020,41 @@ function pipeUpstreamMedia(
       }
     }
 
-    let cType = (upstreamRes.headers["content-type"] as string) || "";
-    if (!cType || cType.includes("octet-stream") || cType.includes("text/html")) {
-      if (targetUrl.toLowerCase().includes(".mp4")) {
-        cType = "video/mp4";
-      } else if (targetUrl.toLowerCase().includes(".webm")) {
-        cType = "video/webm";
-      } else if (targetUrl.toLowerCase().includes(".mkv")) {
-        cType = "video/x-matroska";
+    // Determine safe file name and ensure Content-Disposition is set so browser runs it as a video file
+    let inferredName = customFileName || "";
+    if (!inferredName) {
+      try {
+        inferredName = path.basename(new URL(targetUrl).pathname);
+      } catch {
+        inferredName = "movie.mp4";
       }
     }
-    if (cType) {
-      res.setHeader("Content-Type", cType);
+    const safeFileName = (inferredName || "movie.mp4").replace(/["\r\n]/g, "");
+    const finalFileName = safeFileName.includes(".") ? safeFileName : `${safeFileName}.mp4`;
+
+    const isDownload = req.query.download === "1" || req.path.includes("/download/");
+    const dispositionType = isDownload ? "attachment" : "inline";
+    res.setHeader("Content-Disposition", `${dispositionType}; filename="${finalFileName}"`);
+
+    let cType = (upstreamRes.headers["content-type"] as string) || "";
+    if (!cType || cType.includes("octet-stream") || cType.includes("text/html")) {
+      if (targetUrl.toLowerCase().includes(".mp4") || finalFileName.toLowerCase().endsWith(".mp4")) {
+        cType = "video/mp4";
+      } else if (targetUrl.toLowerCase().includes(".webm") || finalFileName.toLowerCase().endsWith(".webm")) {
+        cType = "video/webm";
+      } else if (targetUrl.toLowerCase().includes(".mkv") || finalFileName.toLowerCase().endsWith(".mkv")) {
+        cType = "video/x-matroska";
+      } else {
+        cType = "video/mp4";
+      }
     }
+    res.setHeader("Content-Type", cType || "video/mp4");
 
     res.setHeader("Accept-Ranges", "bytes");
     res.setHeader("Cache-Control", "public, max-age=86400");
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "Range, Accept, Origin, Content-Type, Authorization, X-Requested-With");
-    res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges, Content-Type");
+    res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges, Content-Type, Content-Disposition");
 
     if (req.method === "HEAD") {
       hasEnded = true;
@@ -2010,6 +2097,9 @@ function pipeUpstreamMedia(
     if (!isStreaming && !clientAborted) {
       upstreamReq.destroy();
       if (!res.headersSent) {
+        if (targetUrl && (targetUrl.startsWith("http://") || targetUrl.startsWith("https://"))) {
+          return res.redirect(302, targetUrl);
+        }
         res.status(504).json({ error: "Secondary worker upstream gateway timeout" });
       }
     }
@@ -2026,10 +2116,14 @@ function pipeUpstreamMedia(
       err?.code === "ERR_STREAM_PREMATURE_CLOSE";
 
     if (!isExpectedAbort && !res.headersSent) {
+      if (targetUrl && (targetUrl.startsWith("http://") || targetUrl.startsWith("https://"))) {
+        return res.redirect(302, targetUrl);
+      }
       res.status(502).json({ error: "Upstream stream fetch failed", details: err.message });
     }
   });
 
+  (req as any)._activeUpstreamReq = upstreamReq;
   upstreamReq.end();
 }
 
@@ -2043,48 +2137,36 @@ app.all("/api/proxy/stream", async (req, res) => {
     return res.status(204).end();
   }
 
-  let targetUrl = (req.query.url as string || "").trim();
-  const b64 = (req.query.b64 as string || req.query.token as string || "").trim();
-  if (b64) {
-    try {
-      targetUrl = decodeURIComponent(Buffer.from(b64, "base64").toString("utf8"));
-    } catch {
-      try {
-        targetUrl = Buffer.from(b64, "base64").toString("utf8");
-      } catch {}
-    }
-  }
-
+  const targetUrl = (req.query.url as string || "").trim();
   if (!targetUrl) {
-    return res.status(400).json({ error: "Missing required 'url' or 'b64' query parameter" });
+    return res.status(400).json({ error: "Missing required 'url' query parameter" });
   }
 
   pipeUpstreamMedia(targetUrl, req, res);
 });
 
-// Dedicated Movie Stream API endpoint for Linwize Filter Bypass
-app.all("/api/movie/stream/:id", async (req, res) => {
+// Dedicated Movie File & Stream API endpoints - runs movies directly as an MP4 media file
+app.all([
+  "/api/movie/file",
+  "/api/movie/file/:id",
+  "/api/movie/file/:id/:filename",
+  "/api/movie/download",
+  "/api/movie/download/:id",
+  "/api/movie/download/:id/:filename",
+  "/api/movie/stream",
+  "/api/movie/stream/:id",
+  "/api/movie/stream/:id/:filename"
+], async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Range, Accept, Origin, Content-Type, Authorization, X-Requested-With");
-  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges, Content-Type");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges, Content-Type, Content-Disposition");
 
   if (req.method === "OPTIONS") {
     return res.status(204).end();
   }
 
-  let queryUrl = (req.query.url as string || "").trim();
-  const b64 = (req.query.b64 as string || req.query.token as string || "").trim();
-  if (b64) {
-    try {
-      queryUrl = decodeURIComponent(Buffer.from(b64, "base64").toString("utf8"));
-    } catch {
-      try {
-        queryUrl = Buffer.from(b64, "base64").toString("utf8");
-      } catch {}
-    }
-  }
-
+  const queryUrl = (req.query.url as string || "").trim();
   const paramId = (req.params.id || "").trim();
   const idOrUrl = paramId || queryUrl;
 
@@ -2094,6 +2176,7 @@ app.all("/api/movie/stream/:id", async (req, res) => {
 
   try {
     let directUrl = "";
+    let fileName = (req.params.filename || "").trim();
     if (queryUrl && (queryUrl.startsWith("http://") || queryUrl.startsWith("https://"))) {
       directUrl = queryUrl;
     } else if (idOrUrl.startsWith("http://") || idOrUrl.startsWith("https://")) {
@@ -2101,13 +2184,29 @@ app.all("/api/movie/stream/:id", async (req, res) => {
     } else {
       const resolved = await resolveArchiveMovie(idOrUrl);
       directUrl = resolved.directUrl;
+      if (!fileName) fileName = resolved.fileName;
     }
 
-    pipeUpstreamMedia(directUrl, req, res);
+    if (!fileName) {
+      try {
+        fileName = path.basename(new URL(directUrl).pathname);
+      } catch {
+        fileName = `${idOrUrl}.mp4`;
+      }
+    }
+    if (!fileName.includes(".")) fileName += ".mp4";
+
+    pipeUpstreamMedia(directUrl, req, res, 0, fileName);
   } catch (err: any) {
-    // Fallback direct url construction if metadata API is slow
-    const fallbackUrl = `https://archive.org/download/${idOrUrl}/${idOrUrl}.mp4`;
-    pipeUpstreamMedia(fallbackUrl, req, res);
+    // Fallback direct url from verified dictionary before guessing
+    const normKey = idOrUrl.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const foundEntry = Object.entries(DEFAULT_VERIFIED_MOVIES).find(
+      ([k]) => k.toLowerCase().replace(/[^a-z0-9]/g, "") === normKey
+    )?.[1];
+
+    const fallbackUrl = foundEntry?.directUrl || (queryUrl && queryUrl.startsWith("http") ? queryUrl : `https://archive.org/download/${idOrUrl}/${idOrUrl}.mp4`);
+    const fallbackFileName = foundEntry?.fileName || `${idOrUrl}.mp4`;
+    pipeUpstreamMedia(fallbackUrl, req, res, 0, fallbackFileName);
   }
 });
 

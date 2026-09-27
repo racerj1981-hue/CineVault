@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Film, Star, Clock } from 'lucide-react';
+import { Play, Film, Star, Clock, FileVideo } from 'lucide-react';
 import { resolveMediaThumbnail, isStaticHost } from '../utils/assetHelper';
 
 export const MediaCard = ({
@@ -23,9 +23,9 @@ export const MediaCard = ({
   const handleImageError = () => {
     if (fallbackStage === 0) {
       setFallbackStage(1);
-      // Fallback 1: High quality cinema placeholder (avoid archive.org to prevent Linwize filter triggers)
+      // Fallback 1: Archive.org official poster for archive items
       if (item.archiveId) {
-        setThumbSrc('https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80');
+        setThumbSrc(`https://archive.org/services/img/${encodeURIComponent(item.archiveId)}`);
         return;
       }
       // If YouTube 11-char ID
@@ -169,7 +169,7 @@ export const MediaCard = ({
           </p>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-zinc-800 mt-auto">
+        <div className="flex items-center justify-between pt-2 border-t border-zinc-800 mt-auto gap-2">
           <div className="flex flex-wrap gap-1 overflow-hidden max-h-5">
             {item.tags?.slice(0, 2).map((tag) => (
               <span
@@ -180,14 +180,35 @@ export const MediaCard = ({
               </span>
             ))}
           </div>
-          <button
-            id={`watch-btn-${item.id}`}
-            onClick={() => onPlay(item)}
-            className="text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 transition cursor-pointer outline-none focus:outline-none"
-          >
-            <span>Watch Movie</span>
-            <Play className="w-3 h-3 fill-current ml-0.5" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {(item.streamUrl || item.archiveId) && (
+              <a
+                href={
+                  item.isLocalFile
+                    ? item.streamUrl
+                    : item.archiveId
+                    ? `/api/movie/file/${encodeURIComponent(item.archiveId)}/${encodeURIComponent((item.title || 'movie').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4')}`
+                    : `/api/proxy/stream?url=${encodeURIComponent(item.streamUrl)}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title="Run movie directly as an MP4 media file in a new browser tab"
+                className="text-[10px] font-bold text-zinc-300 hover:text-white flex items-center gap-1 bg-zinc-800/90 hover:bg-zinc-700 px-2 py-1 rounded-lg border border-zinc-700/60 transition cursor-pointer"
+              >
+                <FileVideo className="w-3 h-3 text-amber-400" />
+                <span>Run File</span>
+              </a>
+            )}
+            <button
+              id={`watch-btn-${item.id}`}
+              onClick={() => onPlay(item)}
+              className="text-xs font-bold text-zinc-950 bg-amber-500 hover:bg-amber-400 px-2.5 py-1 rounded-lg flex items-center gap-1 transition cursor-pointer shadow-xs"
+            >
+              <span>Play</span>
+              <Play className="w-3 h-3 fill-current ml-0.5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

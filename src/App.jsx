@@ -40,6 +40,7 @@ export default function App() {
                 iframe: def.iframe,
                 thumbnail: def.thumbnail,
                 streamUrl: def.streamUrl,
+                directStreamUrl: def.streamUrl,
                 archiveId: def.archiveId,
               };
             }
@@ -89,7 +90,8 @@ export default function App() {
   // Save favorites to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_FAV_KEY, JSON.stringify(favorites));
+      const cleanFavs = (favorites || []).filter((f) => typeof f === 'string' || typeof f === 'number');
+      localStorage.setItem(STORAGE_FAV_KEY, JSON.stringify(cleanFavs));
     } catch {
       // ignore
     }
@@ -98,7 +100,27 @@ export default function App() {
   // Save catalog changes to localStorage (excluding any games)
   useEffect(() => {
     try {
-      const onlyMovies = mediaItems.filter((i) => i.type !== 'game');
+      const onlyMovies = (mediaItems || [])
+        .filter((i) => i && i.type !== 'game' && !(typeof Element !== 'undefined' && i instanceof Element))
+        .map((item) => ({
+          id: item.id,
+          title: item.title,
+          type: item.type || 'movie',
+          category: item.category,
+          year: item.year,
+          duration: item.duration,
+          rating: item.rating,
+          description: item.description,
+          thumbnail: item.thumbnail,
+          iframe: item.iframe,
+          iframeUrl: item.iframeUrl,
+          streamUrl: item.streamUrl,
+          directStreamUrl: item.directStreamUrl,
+          archiveId: item.archiveId,
+          isDirectStream: item.isDirectStream,
+          tags: item.tags,
+          featured: item.featured
+        }));
       localStorage.setItem(STORAGE_CATALOG_KEY, JSON.stringify(onlyMovies));
     } catch {
       // ignore
@@ -137,6 +159,30 @@ export default function App() {
   const handlePlay = (item) => {
     setActiveItem(item);
     window.location.hash = `play=${item.id}`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Play local video file directly
+  const handlePlayLocalFile = (file) => {
+    if (!file) return;
+    const blobUrl = URL.createObjectURL(file);
+    const fileNameClean = file.name.replace(/\.[^/.]+$/, "");
+    const localItem = {
+      id: `local-${Date.now()}`,
+      title: fileNameClean,
+      type: 'movie',
+      category: 'Local File',
+      year: new Date().getFullYear(),
+      duration: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+      rating: 'Local Media',
+      description: `Playing direct video file: "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB). Streaming offline directly from your device storage.`,
+      streamUrl: blobUrl,
+      directStreamUrl: blobUrl,
+      isLocalFile: true,
+      isDirectStream: true,
+      tags: ['Local File', 'MP4', 'Offline', 'File Mode']
+    };
+    setActiveItem(localItem);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -269,6 +315,7 @@ export default function App() {
         onOpenAddModal={() => setIsAddModalOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onRandomPick={handleRandomPick}
+        onPlayLocalFile={handlePlayLocalFile}
       />
 
       {/* Main Content Area */}
@@ -337,7 +384,7 @@ export default function App() {
       <footer className="mt-16 border-t border-zinc-900 bg-zinc-950/80 py-8 text-xs text-zinc-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="./favicon.png" alt="CineVault" className="w-4 h-4 rounded-sm object-cover" />
+            <MovieIcon className="w-4 h-4 text-amber-400" />
             <span className="font-bold text-zinc-300">CINEVAULT</span>
             <span className="text-zinc-600">|</span>
             <span>Curated Cinema Archive</span>

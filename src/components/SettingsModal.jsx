@@ -70,31 +70,88 @@ export const SettingsModal = ({
 
         {/* Scrollable Form Body */}
         <form onSubmit={handleSave} className="overflow-y-auto p-6 space-y-6 text-sm text-zinc-300">
-          {/* Section 1: Direct Stream Architecture */}
+          {/* Section 1: Stream Architecture */}
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Play className="w-4 h-4 text-emerald-400 fill-emerald-400" />
               <h3 className="font-semibold text-white text-sm">
-                Direct Stream Architecture
+                Stream Architecture & Network Proxy
               </h3>
             </div>
             <p className="text-xs text-zinc-400 mb-3">
-              Media connects directly to origin CDN video streams using native HTML5 playback with zero proxy latency, maximum bandwidth, and complete byte-range seek support.
+              Choose your preferred streaming route. Both modes support full MP4 byte-range seeking and native HTML5 playback.
             </p>
 
-            <div className="p-3.5 rounded-xl bg-zinc-950/70 border border-emerald-500/30 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                <div>
-                  <span className="text-xs font-semibold text-white block">Direct Stream: Active</span>
-                  <span className="text-[11px] text-emerald-400/90 block">
-                    Zero intermediary proxies • Native hardware acceleration • Full range seeking
-                  </span>
+            <div className="space-y-2.5">
+              {/* Direct Origin Option */}
+              <label
+                onClick={() => setFormData(prev => ({ ...prev, defaultPlaybackMode: 'direct' }))}
+                className={`p-3 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition ${
+                  (formData.defaultPlaybackMode || 'direct') === 'direct'
+                    ? 'bg-emerald-500/10 border-emerald-500/50 shadow-xs'
+                    : 'bg-zinc-950/60 border-zinc-800 hover:border-zinc-700'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                    (formData.defaultPlaybackMode || 'direct') === 'direct'
+                      ? 'border-emerald-400 bg-emerald-400'
+                      : 'border-zinc-600'
+                  }`}>
+                    {(formData.defaultPlaybackMode || 'direct') === 'direct' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-zinc-950" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-white block">⚡ Direct Origin (Fastest CDN)</span>
+                    <span className="text-[11px] text-zinc-400 block">
+                      Connect directly to source CDN with 0ms proxy lag and full hardware acceleration
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/40 shrink-0">
-                Direct Only
-              </span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 ${
+                  (formData.defaultPlaybackMode || 'direct') === 'direct'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : 'bg-zinc-900 text-zinc-400 border-zinc-800'
+                }`}>
+                  Fast CDN
+                </span>
+              </label>
+
+              {/* Cloud Stream Relay Option */}
+              <label
+                onClick={() => setFormData(prev => ({ ...prev, defaultPlaybackMode: 'relay' }))}
+                className={`p-3 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition ${
+                  formData.defaultPlaybackMode === 'relay'
+                    ? 'bg-amber-500/10 border-amber-500/50 shadow-xs'
+                    : 'bg-zinc-950/60 border-zinc-800 hover:border-zinc-700'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                    formData.defaultPlaybackMode === 'relay'
+                      ? 'border-amber-400 bg-amber-400'
+                      : 'border-zinc-600'
+                  }`}>
+                    {formData.defaultPlaybackMode === 'relay' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-zinc-950" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-white block">🛡️ Cloud Stream Relay (Filter Bypass)</span>
+                    <span className="text-[11px] text-zinc-400 block">
+                      Proxies video through this origin with HTTP range forwarding to bypass Linwize and school filters
+                    </span>
+                  </div>
+                </div>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 ${
+                  formData.defaultPlaybackMode === 'relay'
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    : 'bg-zinc-900 text-zinc-400 border-zinc-800'
+                }`}>
+                  Filter Bypass
+                </span>
+              </label>
             </div>
           </div>
 

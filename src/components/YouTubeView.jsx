@@ -150,8 +150,31 @@ export const YouTubeView = () => {
   // Save persistent state
   useEffect(() => {
     try {
-      localStorage.setItem('cinevault_yt_queue', JSON.stringify(queue));
-      localStorage.setItem('cinevault_yt_history', JSON.stringify(history));
+      const cleanQueue = (queue || [])
+        .filter((v) => v && v.id && !(typeof Element !== 'undefined' && v instanceof Element))
+        .map((v) => ({
+          id: v.id,
+          title: v.title,
+          channel: v.channel,
+          thumbnail: v.thumbnail,
+          duration: v.duration,
+          category: v.category,
+          views: v.views
+        }));
+      const cleanHistory = (history || [])
+        .filter((v) => v && v.id && !(typeof Element !== 'undefined' && v instanceof Element))
+        .map((v) => ({
+          id: v.id,
+          title: v.title,
+          channel: v.channel,
+          thumbnail: v.thumbnail,
+          duration: v.duration,
+          category: v.category,
+          views: v.views,
+          watchedAt: v.watchedAt
+        }));
+      localStorage.setItem('cinevault_yt_queue', JSON.stringify(cleanQueue));
+      localStorage.setItem('cinevault_yt_history', JSON.stringify(cleanHistory));
     } catch {
       // ignore
     }

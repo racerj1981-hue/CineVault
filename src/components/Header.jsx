@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Film,
   Search,
@@ -7,7 +7,9 @@ import {
   Shuffle,
   Settings,
   Youtube,
-  ShieldCheck
+  ShieldCheck,
+  FileVideo,
+  Upload
 } from 'lucide-react';
 import { MovieIcon } from './MovieIcon';
 import { YouTubePlayIcon } from './YouTubeLogo';
@@ -29,7 +31,17 @@ export const Header = ({
   onOpenAddModal,
   onOpenSettings,
   onRandomPick,
+  onPlayLocalFile,
 }) => {
+  const fileInputRef = useRef(null);
+
+  const handleLocalFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file && onPlayLocalFile) {
+      onPlayLocalFile(file);
+      e.target.value = '';
+    }
+  };
   return (
     <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/80 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -43,12 +55,8 @@ export const Header = ({
                 if (showFavoritesOnly) onToggleFavorites();
               }}
             >
-              <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-lg shadow-amber-500/20 border border-amber-500/30 bg-zinc-900 shrink-0">
-                <img
-                  src="./favicon.png"
-                  alt="CineVault"
-                  className="w-full h-full object-cover"
-                />
+              <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-amber-600 to-rose-600 text-zinc-950 font-black shadow-lg shadow-amber-500/20">
+                <MovieIcon className="w-5 h-5 sm:w-6 sm:h-6 drop-shadow" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
@@ -139,6 +147,27 @@ export const Header = ({
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {currentTab === 'movies' && (
               <>
+                {/* Hidden File Picker Input for Local Movie Files */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="video/*,.mp4,.mkv,.webm,.mov,.avi"
+                  onChange={handleLocalFileSelect}
+                  className="hidden"
+                />
+
+                {/* Play Local Video File Button */}
+                <button
+                  id="play-local-file-btn"
+                  type="button"
+                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                  title="Run a video file (.mp4, .mkv, .webm) from your computer or Chromebook"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-zinc-800 transition cursor-pointer"
+                >
+                  <FileVideo className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden md:inline">Play File</span>
+                </button>
+
                 {/* Random Pick Button */}
                 <button
                   id="random-pick-btn"

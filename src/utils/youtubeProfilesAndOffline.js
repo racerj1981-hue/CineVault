@@ -263,11 +263,25 @@ export function loadOfflineVideos() {
 
 export function saveOfflineVideos(videos) {
   try {
-    const validOnly = (videos || []).filter((v) => v && v.id && v.available !== false);
+    const validOnly = (videos || [])
+      .filter((v) => v && v.id && v.available !== false && !(typeof Element !== 'undefined' && v instanceof Element))
+      .map((v) => ({
+        id: v.id,
+        title: v.title,
+        channel: v.channel,
+        thumbnail: v.thumbnail,
+        duration: v.duration,
+        category: v.category,
+        views: v.views,
+        savedOffline: true,
+        offlineTimestamp: v.offlineTimestamp,
+        offlineSize: v.offlineSize,
+        cachedAt: v.cachedAt
+      }));
     localStorage.setItem(OFFLINE_VIDEOS_KEY, JSON.stringify(validOnly));
     window.dispatchEvent(new CustomEvent('cinevault_offline_videos_updated', { detail: { count: validOnly.length } }));
   } catch (e) {
-    console.warn('[Offline] Failed to save offline videos:', e);
+    console.warn('[Offline] Failed to save offline videos:', e?.message || e);
   }
 }
 

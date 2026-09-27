@@ -9,11 +9,17 @@ import {
   Tv,
   Eye,
   EyeOff,
-  Play,
-  AlertTriangle
+  AlertTriangle,
+  FileVideo,
+  Download,
+  ExternalLink,
+  Loader2,
+  HardDrive,
+  Clapperboard
 } from 'lucide-react';
 import { isDirectMediaUrl } from '../utils/streamFetch';
 import { isStaticHost } from '../utils/assetHelper';
+import { getStoredSettings } from '../utils/appSettings';
 
 export const PlayerView = ({
   item,
@@ -31,10 +37,17 @@ export const PlayerView = ({
 
   // Direct Stream State
   const [streamError, setStreamError] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
   const containerRef = useRef(null);
+  const videoRef = useRef(null);
+  const pointerDownPausedRef = useRef(null);
+  const userHasPausedRef = useRef(false);
 
-  // Extract iframe src URL
+  // Extract iframe src URL if present
   const extractSrc = (htmlOrUrl) => {
     if (!htmlOrUrl) return '';
     if (htmlOrUrl.startsWith('http://') || htmlOrUrl.startsWith('https://')) {
@@ -48,28 +61,40 @@ export const PlayerView = ({
 
   // Dynamic Archive.org stream resolver state for movies without pre-set streamUrl
   const [resolvedStreamUrl, setResolvedStreamUrl] = useState(item?.streamUrl || item?.directStreamUrl || '');
-  const [isResolving, setIsResolving] = useState(false);
   const [streamAttempt, setStreamAttempt] = useState(0);
 
-  // Streaming node state: default to 'direct' on static hosts (GitHub Pages) or 'relay' on full-stack
-  const [streamNode, setStreamNode] = useState(() => (isStaticHost() ? 'direct' : 'relay')); // 'relay' | 'direct' | 'cors'
+  // Streaming node state: 'direct' (fast CDN) | 'relay' (Cloud Run proxy) | 'embed' (Archive iframe)
+  const [streamNode, setStreamNode] = useState(() => {
+    try {
+      return getStoredSettings()?.defaultPlaybackMode || 'direct';
+    } catch {
+      return 'direct';
+    }
+  });
 
   useEffect(() => {
-    setStreamNode(isStaticHost() ? 'direct' : 'relay');
+    try {
+      const mode = getStoredSettings()?.defaultPlaybackMode || 'direct';
+      setStreamNode(mode);
+    } catch {
+      setStreamNode('direct');
+    }
     setStreamAttempt(0);
     setResolvedStreamUrl(item?.streamUrl || item?.directStreamUrl || '');
     setStreamError(false);
     setIsVideoLoading(true);
-    setIsIframeLoading(true);
+    setIsBuffering(false);
+    setIsSeeking(false);
+    setIsPaused(false);
+    userHasPausedRef.current = false;
 
-    if (item?.streamUrl) {
+    if (item?.isLocalFile || item?.streamUrl) {
       return;
     }
     const match = (item?.archiveId || iframeSrc || '').match(/archive\.org\/(?:embed|details|download)\/([a-zA-Z0-9._-]+)/) ||
       (item?.archiveId ? ['', item.archiveId] : null);
 
     if (match && match[1]) {
-      setIsResolving(true);
       fetch(`/api/movie/resolve/${encodeURIComponent(match[1])}`)
         .then(res => res.json())
         .then(data => {
@@ -77,13 +102,13 @@ export const PlayerView = ({
             setResolvedStreamUrl(data.directStreamUrl);
           }
         })
-        .catch(err => console.warn('Dynamic stream resolve error:', err))
-        .finally(() => setIsResolving(false));
+        .catch(err => console.warn('Dynamic stream resolve error:', err));
     }
-  }, [item?.id, item?.archiveId, iframeSrc]);
+  }, [item?.id, item?.archiveId, iframeSrc, item?.isLocalFile]);
 
   // Extract direct stream candidate URL if available
   const extractDirectCandidate = (mediaItem, src) => {
+    if (mediaItem?.isLocalFile && mediaItem?.streamUrl) return mediaItem.streamUrl;
     if (mediaItem?.streamUrl) return mediaItem.streamUrl;
     if (mediaItem?.directStreamUrl) return mediaItem.directStreamUrl;
     if (resolvedStreamUrl) return resolvedStreamUrl;
@@ -92,37 +117,169 @@ export const PlayerView = ({
   };
 
   const rawCandidate = extractDirectCandidate(item, iframeSrc);
-  const movieIdentifier = item?.archiveId || item?.id;
   
-  // Linwize Cloud Relay URL: routes media stream through local Cloud Run origin with Byte Range support
-  // Avoid passing raw external archive.org query params to prevent Linwize query-string inspection blocks
-  const linwizeRelayUrl = movieIdentifier
-    ? `/api/movie/stream/${encodeURIComponent(movieIdentifier)}`
-    : (rawCandidate ? `/api/proxy/stream?b64=${btoa(encodeURIComponent(rawCandidate))}` : '');
+  const movieFileSlug = (item?.title || 'movie').replace(/[^a-zA-Z0-9_-]/g, '_') + '.mp4';
 
-  const activeStreamUrl = (streamNode === 'relay' && linwizeRelayUrl)
-    ? (streamAttempt > 0 ? `${linwizeRelayUrl}?r=${streamAttempt}` : linwizeRelayUrl)
+  // Direct MP4 file stream endpoints through backend with Content-Disposition inline header
+  const fileRelayUrl = rawCandidate
+    ? `/api/movie/file/${encodeURIComponent(item?.archiveId || item?.id || 'movie')}/${encodeURIComponent(movieFileSlug)}?url=${encodeURIComponent(rawCandidate)}`
+    : (item?.archiveId
+    ? `/api/movie/file/${encodeURIComponent(item.archiveId)}/${encodeURIComponent(movieFileSlug)}`
+    : (item?.id && !item.isLocalFile
+    ? `/api/movie/file/${encodeURIComponent(item.id)}/${encodeURIComponent(movieFileSlug)}`
+    : ''));
+
+  const downloadFileUrl = rawCandidate
+    ? `/api/movie/download/${encodeURIComponent(item?.archiveId || item?.id || 'movie')}/${encodeURIComponent(movieFileSlug)}?url=${encodeURIComponent(rawCandidate)}`
+    : (item?.archiveId
+    ? `/api/movie/download/${encodeURIComponent(item.archiveId)}/${encodeURIComponent(movieFileSlug)}`
+    : '');
+
+  // Best direct standalone file URL for opening in native browser file player
+  const standaloneFileUrl = item?.isLocalFile ? item?.streamUrl : (rawCandidate || fileRelayUrl || resolvedStreamUrl || '');
+
+  const activeStreamUrl = item?.isLocalFile
+    ? (item?.streamUrl || '')
+    : (streamNode === 'relay' && fileRelayUrl)
+    ? fileRelayUrl
     : (streamNode === 'cors' && rawCandidate)
     ? `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawCandidate)}`
-    : (linwizeRelayUrl || rawCandidate || resolvedStreamUrl);
+    : (rawCandidate || resolvedStreamUrl || fileRelayUrl);
 
-  const unblockedPlayerUrl = movieIdentifier
-    ? `/api/movie/player/${encodeURIComponent(movieIdentifier)}`
-    : iframeSrc;
+  // Active media loading state (true during initial load, time seeking, or stream buffering)
+  const isMediaLoading = (isVideoLoading || isSeeking || isBuffering) && !streamError;
 
-  const isDirectCandidate = !!(rawCandidate || resolvedStreamUrl || linwizeRelayUrl);
-
-  // Direct Stream is the primary and direct playback mode
-  const [playbackMode, setPlaybackMode] = useState('direct');
-  const [isVideoLoading, setIsVideoLoading] = useState(true);
-  const [isIframeLoading, setIsIframeLoading] = useState(true);
-
-  // Reset stream loading and error when movie, mode, or active stream changes
+  // Reset stream loading and error when movie, active stream, or node changes
   useEffect(() => {
     setIsVideoLoading(true);
-    setIsIframeLoading(true);
+    setIsBuffering(false);
+    setIsSeeking(false);
     setStreamError(false);
-  }, [item?.id, activeStreamUrl, playbackMode, streamNode, reloadKey]);
+  }, [item?.id, activeStreamUrl, streamNode, reloadKey]);
+
+  // Attempt playback with graceful fallback when autoplay policy restricts unmuted play
+  useEffect(() => {
+    if (streamNode === 'embed') {
+      setIsVideoLoading(false);
+      return;
+    }
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Never force playback if user has paused the movie
+    if (userHasPausedRef.current) {
+      return;
+    }
+
+    let isMounted = true;
+    video.preload = 'auto';
+
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          if (isMounted) {
+            setIsPaused(false);
+            setIsVideoLoading(false);
+            setIsBuffering(false);
+          }
+        })
+        .catch((err) => {
+          // Autoplay blocked by browser policy (expected inside iframes/unmuted)
+          if (isMounted) {
+            setIsPaused(true);
+            setIsVideoLoading(false);
+          }
+        });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeStreamUrl, streamNode, reloadKey]);
+
+  // Track whether video was paused at the moment user initiated pointer/touch down
+  const handlePointerDown = () => {
+    const video = videoRef.current;
+    if (video) {
+      pointerDownPausedRef.current = video.paused;
+    }
+  };
+
+  // Toggle play/pause on player click in the video frame without fighting native controls
+  const handleTogglePlay = (e) => {
+    e?.stopPropagation?.();
+    const video = videoRef.current;
+    if (!video) return;
+
+    // If the click occurred in the bottom controls area (approx bottom 56px),
+    // let the native browser controls handle play/pause/seek/volume exclusively.
+    if (e?.clientY && typeof video.getBoundingClientRect === 'function') {
+      const rect = video.getBoundingClientRect();
+      const clickY = e.clientY - rect.top;
+      if (clickY > rect.height - 56) {
+        pointerDownPausedRef.current = null;
+        return;
+      }
+    }
+
+    const wasPausedBeforeClick = pointerDownPausedRef.current !== null
+      ? pointerDownPausedRef.current
+      : video.paused;
+    pointerDownPausedRef.current = null;
+
+    if (wasPausedBeforeClick) {
+      // User clicked while paused -> resume playback
+      userHasPausedRef.current = false;
+      if (video.paused) {
+        video.play().catch((err) => {
+          console.warn('Play attempt failed:', err?.message || 'Playback blocked');
+        });
+      }
+      setIsPaused(false);
+    } else {
+      // User clicked while playing -> PAUSE the movie and keep it paused!
+      userHasPausedRef.current = true;
+      if (!video.paused) {
+        video.pause();
+      }
+      setIsPaused(true);
+    }
+  };
+
+  // Video error handler with seamless failover
+  const handleVideoError = (err) => {
+    err?.stopPropagation?.();
+    const errMsg = err?.message || (err?.target?.error ? `MediaError code ${err.target.error.code}` : 'Video load error');
+    console.warn('Video stream error on node:', streamNode, errMsg);
+
+    // If direct failed and cloud relay is available, try cloud relay automatically
+    if (streamNode === 'direct' && fileRelayUrl) {
+      console.log('Direct stream failed, falling back to Cloud Relay...');
+      setStreamNode('relay');
+      setStreamAttempt(prev => prev + 1);
+      setIsVideoLoading(true);
+      return;
+    }
+
+    // If relay had an initial error, attempt a clean retry
+    if (streamNode === 'relay' && streamAttempt === 0) {
+      console.log('Cloud Relay stream retry attempt...');
+      setStreamAttempt(1);
+      setIsVideoLoading(true);
+      return;
+    }
+
+    if (iframeSrc && streamNode !== 'embed') {
+      console.log('Stream error, falling back to Embed Player...');
+      setStreamNode('embed');
+      setIsVideoLoading(false);
+      return;
+    }
+    setIsVideoLoading(false);
+    setStreamError(true);
+  };
 
   // Fullscreen handler
   const toggleFullscreen = async () => {
@@ -136,7 +293,7 @@ export const PlayerView = ({
         setIsFullscreen(false);
       }
     } catch (err) {
-      console.warn('Fullscreen request failed:', err);
+      console.warn('Fullscreen request failed:', err?.message || 'Blocked');
     }
   };
 
@@ -197,64 +354,78 @@ export const PlayerView = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 flex-wrap">
-              {/* Toggle Embed vs Direct Stream */}
-              {isDirectCandidate && iframeSrc && (
-                <div className="flex items-center bg-zinc-900 p-0.5 rounded-lg border border-zinc-800 text-[11px] mr-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPlaybackMode('direct');
-                      setStreamError(false);
-                    }}
-                    title="Direct Stream"
-                    className={`px-2.5 py-1 rounded-md transition font-medium cursor-pointer flex items-center gap-1.5 ${
-                      playbackMode === 'direct'
-                        ? 'bg-emerald-500 text-zinc-950 font-bold shadow-xs'
-                        : 'text-zinc-400 hover:text-emerald-400'
-                    }`}
-                  >
-                    <Play className="w-3 h-3 fill-current" />
-                    <span>Stream</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPlaybackMode('embed');
-                      setStreamError(false);
-                    }}
-                    title="Legacy Iframe Embed"
-                    className={`px-2 py-1 rounded-md transition font-medium cursor-pointer ${
-                      playbackMode === 'embed'
-                        ? 'bg-zinc-800 text-white shadow-xs'
-                        : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    Embed
-                  </button>
-                </div>
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap">
+              {/* File Player Status Badge */}
+              <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold">
+                <FileVideo className="w-3.5 h-3.5" />
+                <span>{item.isLocalFile ? 'Local File' : 'MP4 File Player'}</span>
+              </div>
+
+              {/* Run as Standalone File in Browser */}
+              {standaloneFileUrl && (
+                <a
+                  href={standaloneFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Run movie directly as an MP4 media file in a new browser window"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-[11px] transition shadow-xs cursor-pointer"
+                >
+                  <ExternalLink className="w-3 h-3 stroke-[2.5]" />
+                  <span>Run as File (.mp4)</span>
+                </a>
               )}
 
-              {/* Linwize Relay Toggle */}
-              {playbackMode === 'direct' && (linwizeRelayUrl || rawCandidate) && (
+              {/* Download Movie File */}
+              {!item.isLocalFile && standaloneFileUrl && (
+                <a
+                  href={downloadFileUrl || standaloneFileUrl}
+                  download={movieFileSlug}
+                  title="Download MP4 movie file to play offline"
+                  className="p-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white rounded-lg transition cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                </a>
+              )}
+
+              {/* Stream Node Toggle (Direct / Cloud Relay / Embed Player) */}
+              {!item.isLocalFile && (
                 <button
                   type="button"
                   onClick={() => {
-                    const next = streamNode === 'relay' ? 'direct' : 'relay';
+                    const nodes = iframeSrc ? ['direct', 'relay', 'embed'] : ['direct', 'relay'];
+                    const nextIndex = (nodes.indexOf(streamNode) + 1) % nodes.length;
+                    const next = nodes[nextIndex];
                     setStreamNode(next);
                     setStreamAttempt(prev => prev + 1);
                     setStreamError(false);
-                    setIsVideoLoading(true);
+                    if (next !== 'embed') {
+                      setIsVideoLoading(true);
+                    } else {
+                      setIsVideoLoading(false);
+                    }
                   }}
-                  title={streamNode === 'relay' ? 'Linwize Relay Active (Zero-block streaming). Click to switch to Direct Origin.' : 'Direct Origin Active. Click to switch to Linwize Relay.'}
-                  className={`px-2.5 py-1 rounded-lg transition font-medium cursor-pointer text-[11px] flex items-center gap-1.5 border ${
-                    streamNode === 'relay'
+                  title={
+                    streamNode === 'direct'
+                      ? 'Direct Origin Active (Fastest CDN). Click to switch to Cloud Relay.'
+                      : streamNode === 'relay'
+                      ? (iframeSrc ? 'Cloud Relay Active. Click to switch to Embed Player.' : 'Cloud Relay Active. Click to switch to Direct Origin.')
+                      : 'Archive Embed Player Active. Click to switch to Direct Origin.'
+                  }
+                  className={`px-2.5 py-1 rounded-lg transition font-medium cursor-pointer text-[11px] flex items-center gap-1 border ${
+                    streamNode === 'direct'
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs'
-                      : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200'
+                      : streamNode === 'relay'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs'
+                      : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-xs'
                   }`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${streamNode === 'relay' ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'}`} />
-                  <span>{streamNode === 'relay' ? '🛡️ Linwize Relay' : '⚡ Direct Origin'}</span>
+                  <span>
+                    {streamNode === 'direct'
+                      ? '⚡ Direct Origin'
+                      : streamNode === 'relay'
+                      ? '🛡️ Cloud Relay'
+                      : '🎬 Embed Player'}
+                  </span>
                 </button>
               )}
 
@@ -336,92 +507,189 @@ export const PlayerView = ({
 
           {/* Player Frame */}
           <div className="relative w-full aspect-video sm:aspect-16/10 min-h-[380px] sm:min-h-[520px] bg-black flex items-center justify-center overflow-hidden">
-            {/* Cinematic Loading Animation Stage */}
-            {((playbackMode === 'direct' && isVideoLoading && !streamError) || (playbackMode === 'embed' && isIframeLoading)) && (
-              <div className="absolute inset-0 z-15 bg-zinc-950 flex flex-col items-center justify-center p-6 text-center overflow-hidden select-none">
-                {/* Ambient Soft Poster Backdrop */}
-                {item.thumbnail && (
-                  <img
-                    src={item.thumbnail}
-                    alt=""
-                    referrerPolicy="no-referrer"
-                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-25 scale-110 pointer-events-none transition-opacity duration-700"
-                  />
-                )}
-
-                <div className="relative z-20 flex flex-col items-center justify-center">
-                  {/* Glowing Orbiting Cinema Reel Spinner */}
-                  <div className="relative w-20 h-20 mb-4 flex items-center justify-center">
-                    <div className="absolute inset-0 rounded-full border-2 border-amber-500/20 animate-ping" />
-                    <div className="absolute inset-0 rounded-full border-2 border-t-amber-400 border-r-amber-500/50 border-b-transparent border-l-transparent animate-spin" />
-                    <div className="w-14 h-14 rounded-full bg-zinc-900 border border-amber-500/40 shadow-xl shadow-amber-500/20 flex items-center justify-center">
-                      <Film className="w-6 h-6 text-amber-400 animate-pulse" />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-white font-bold text-sm tracking-wide">
-                    <span>Loading Cinema Stream</span>
-                    <span className="flex gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </span>
-                  </div>
-                  <p className="text-xs text-zinc-400 mt-1.5 font-medium">
-                    {streamNode === 'relay' ? '🛡️ Connecting via Linwize Relay • HD 1080p' : 'Connecting to direct origin • HD 1080p'}
-                  </p>
-
-                  {/* Shimmering Golden Progress Wave */}
-                  <div className="w-48 h-1 bg-zinc-800/80 rounded-full overflow-hidden mt-4 relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400 to-transparent animate-shimmer" />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {playbackMode === 'direct' && activeStreamUrl ? (
+            {streamNode === 'embed' && iframeSrc ? (
+              <iframe
+                key={`embed-${item.id}-${reloadKey}`}
+                src={iframeSrc}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                allowFullScreen
+                title={item.title}
+              />
+            ) : activeStreamUrl ? (
               <div className="w-full h-full relative flex items-center justify-center bg-black">
                 <video
+                  ref={videoRef}
                   key={`video-${item.id}-${streamNode}-${streamAttempt}-${reloadKey}`}
                   src={activeStreamUrl}
-                  controls
-                  autoPlay
+                  controls={!isMediaLoading}
                   playsInline
-                  className={`w-full h-full object-contain absolute inset-0 bg-black transition-opacity duration-500 ${
-                    isVideoLoading ? 'opacity-0' : 'opacity-100'
+                  preload="auto"
+                  onPointerDown={handlePointerDown}
+                  onMouseDown={handlePointerDown}
+                  onClick={handleTogglePlay}
+                  className={`w-full h-full object-contain absolute inset-0 bg-black cursor-pointer transition-opacity duration-300 ${
+                    isMediaLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'
                   }`}
-                  onLoadStart={() => setIsVideoLoading(true)}
-                  onWaiting={() => setIsVideoLoading(true)}
-                  onCanPlay={() => setIsVideoLoading(false)}
-                  onPlaying={() => setIsVideoLoading(false)}
-                  onError={() => {
-                    // In Linwize relay mode, automatically retry up to 2 times
-                    if (streamNode === 'relay' && streamAttempt < 2) {
-                      setStreamAttempt((prev) => prev + 1);
-                      setIsVideoLoading(true);
-                      return;
-                    }
-                    // Auto-fallback to local unblocked HTML5 player iframe on same origin
-                    if (playbackMode === 'direct') {
-                      setPlaybackMode('embed');
-                      setIsIframeLoading(true);
-                      setIsVideoLoading(false);
-                      setStreamError(false);
-                      return;
-                    }
+                  onLoadStart={() => {
+                    setIsVideoLoading(true);
+                    setStreamError(false);
+                  }}
+                  onLoadedMetadata={() => setIsVideoLoading(false)}
+                  onLoadedData={() => {
                     setIsVideoLoading(false);
-                    setStreamError(true);
+                    setIsSeeking(false);
+                  }}
+                  onCanPlay={() => {
+                    setIsVideoLoading(false);
+                    setIsBuffering(false);
+                    setIsSeeking(false);
+                  }}
+                  onPlaying={() => {
+                    setIsVideoLoading(false);
+                    setIsBuffering(false);
+                    setIsSeeking(false);
+                    setIsPaused(false);
+                  }}
+                  onPlay={() => {
+                    userHasPausedRef.current = false;
+                    setIsPaused(false);
+                  }}
+                  onPause={() => {
+                    userHasPausedRef.current = true;
+                    setIsPaused(true);
+                  }}
+                  onSeeking={() => {
+                    setIsSeeking(true);
+                    setIsBuffering(true);
+                  }}
+                  onSeeked={() => {
+                    setTimeout(() => {
+                      setIsSeeking(false);
+                      setIsBuffering(false);
+                    }, 120);
+                  }}
+                  onWaiting={() => setIsBuffering(true)}
+                  onError={(e) => {
+                    e?.stopPropagation?.();
+                    handleVideoError(e);
                   }}
                 />
 
+                {/* Loading / Seeking / Buffering Screen Overlay - strictly covers the player with a 100% opaque background and hides all controls */}
+                {isMediaLoading && (
+                  <div
+                    className="absolute inset-0 z-30 bg-zinc-950 flex flex-col items-center justify-center p-6 text-center overflow-hidden pointer-events-auto select-none"
+                  >
+                    {/* Ambient Soft Poster Backdrop */}
+                    {item.thumbnail && (
+                      <img
+                        src={item.thumbnail}
+                        alt=""
+                        referrerPolicy="no-referrer"
+                        className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-20 scale-110 pointer-events-none transition-opacity duration-700"
+                      />
+                    )}
+
+                    {/* Dark gradient base to guarantee 100% solid opacity over video */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/95 via-zinc-950 to-zinc-950 pointer-events-none" />
+
+                    <div className="relative z-20 flex flex-col items-center justify-center max-w-lg mx-auto">
+                      {/* Cinema Film Reel & Media Container Loader */}
+                      <div className="relative w-24 h-24 mb-5 flex items-center justify-center">
+                        {/* Outer Glow Halo */}
+                        <div className="absolute inset-0 rounded-full bg-amber-500/10 blur-xl animate-pulse" />
+
+                        {/* Outer Rotating Cinema Sprocket Ring */}
+                        <div
+                          className="absolute inset-0 rounded-full border-2 border-dashed border-amber-500/40 animate-spin"
+                          style={{ animationDuration: '8s' }}
+                        />
+
+                        {/* Middle Reverse Ring with Gold Accents */}
+                        <div className="absolute inset-2 rounded-full border border-t-amber-400 border-r-amber-500/40 border-b-transparent border-l-amber-400/30 animate-spin-reverse" />
+
+                        {/* Central Hub with Cinema Reel Disc */}
+                        <div className="relative w-14 h-14 rounded-full bg-zinc-900 border border-amber-500/50 shadow-2xl shadow-amber-500/25 flex items-center justify-center animate-film-pulse">
+                          {item.isLocalFile ? (
+                            <HardDrive className="w-6 h-6 text-emerald-400" />
+                          ) : (
+                            <FileVideo className="w-6 h-6 text-amber-400" />
+                          )}
+
+                          {/* Center Projector Lens Glint */}
+                          <div className="absolute top-2.5 right-3 w-1.5 h-1.5 rounded-full bg-white/70 blur-[0.5px]" />
+                        </div>
+
+                        {/* Audio/Video Demuxing Equalizer Waveform Bars */}
+                        <div className="absolute -bottom-1 flex items-end gap-1 px-2 py-0.5 rounded-md bg-zinc-900/90 border border-zinc-800 shadow-xs">
+                          <div className="w-1 bg-amber-400 rounded-full animate-eq-1" />
+                          <div className="w-1 bg-amber-400 rounded-full animate-eq-2" />
+                          <div className="w-1 bg-amber-400 rounded-full animate-eq-3" />
+                          <div className="w-1 bg-amber-400 rounded-full animate-eq-4" />
+                        </div>
+                      </div>
+
+                      {/* Status Headline */}
+                      <div className="flex items-center gap-2 text-white font-bold text-base tracking-wide mb-1">
+                        <span>
+                          {isSeeking
+                            ? 'Scrubbing Video Frames'
+                            : isBuffering
+                            ? 'Buffering MP4 Stream'
+                            : item.isLocalFile
+                            ? 'Reading Local Movie File'
+                            : streamNode === 'relay'
+                            ? 'Streaming Cloud Relay File'
+                            : 'Loading Direct Movie File'}
+                        </span>
+                        <span className="flex gap-1 items-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </span>
+                      </div>
+
+                      {/* Movie Title */}
+                      <p className="text-sm font-semibold text-zinc-300 truncate max-w-xs sm:max-w-md mb-2">
+                        {item.title}
+                      </p>
+
+                      {/* Clean Unboxed Metadata Line (frontend-design zero-pill discipline) */}
+                      <div className="flex items-center gap-2 text-xs text-zinc-400 font-medium mb-4 flex-wrap justify-center">
+                        <span className={item.isLocalFile ? "text-emerald-400" : "text-amber-400/90"}>
+                          {item.isLocalFile ? 'Local Storage File' : streamNode === 'direct' ? 'Direct CDN Stream' : 'Cloud Relay'}
+                        </span>
+                        <span aria-hidden="true" className="text-zinc-600">·</span>
+                        <span>{item.duration || 'Full Feature'}</span>
+                        <span aria-hidden="true" className="text-zinc-600">·</span>
+                        <span>Hardware Decoded</span>
+                      </div>
+
+                      {/* Shimmering Golden Progress Wave */}
+                      <div className="w-56 sm:w-64 h-1.5 bg-zinc-900 border border-zinc-800 rounded-full overflow-hidden relative shadow-inner">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400 to-transparent animate-shimmer" />
+                      </div>
+
+                      {/* Micro Subtext */}
+                      <p className="text-[11px] text-zinc-500 mt-2 font-mono">
+                        {item.isLocalFile
+                          ? 'Zero network latency • Offline storage playback'
+                          : 'Frame-accurate seek • 1080p MP4 audio & video demuxing'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Fallback Panel */}
                 {streamError && (
-                  <div className="absolute inset-0 z-20 bg-black/90 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
+                  <div className="absolute inset-0 z-25 bg-zinc-950 flex flex-col items-center justify-center p-6 text-center animate-fadeIn">
                     <AlertTriangle className="w-12 h-12 text-rose-400 mb-3" />
                     <h4 className="text-base font-bold text-white mb-1">
-                      Direct Stream Interrupted or Blocked
+                      Stream Connection Interrupted
                     </h4>
                     <p className="text-xs text-zinc-400 max-w-md mb-4">
-                      The direct media origin could not be reached or was blocked by the network filter.
+                      Unable to stream via current mode. Choose another streaming node or retry below:
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-2">
                       <button
@@ -431,12 +699,12 @@ export const PlayerView = ({
                           setIsVideoLoading(true);
                           handleReload();
                         }}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white transition cursor-pointer shadow-md flex items-center gap-1.5"
+                        className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition cursor-pointer shadow-md flex items-center gap-1.5"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
                         <span>Retry Stream</span>
                       </button>
-                      {linwizeRelayUrl && streamNode !== 'relay' && (
+                      {fileRelayUrl && streamNode !== 'relay' && (
                         <button
                           type="button"
                           onClick={() => {
@@ -444,12 +712,12 @@ export const PlayerView = ({
                             setStreamError(false);
                             setIsVideoLoading(true);
                           }}
-                          className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition cursor-pointer shadow-md flex items-center gap-1.5"
+                          className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition cursor-pointer shadow-md flex items-center gap-1.5"
                         >
-                          <span>🛡️ Switch to Linwize Cloud Relay</span>
+                          <span>🛡️ Switch to Cloud Relay</span>
                         </button>
                       )}
-                      {linwizeRelayUrl && streamNode === 'relay' && rawCandidate && (
+                      {rawCandidate && streamNode !== 'direct' && (
                         <button
                           type="button"
                           onClick={() => {
@@ -457,67 +725,45 @@ export const PlayerView = ({
                             setStreamError(false);
                             setIsVideoLoading(true);
                           }}
-                          className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition cursor-pointer flex items-center gap-1.5"
+                          className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition cursor-pointer flex items-center gap-1.5"
                         >
                           <span>⚡ Switch to Direct Origin</span>
                         </button>
                       )}
-                      {iframeSrc && (
+                      {iframeSrc && streamNode !== 'embed' && (
                         <button
                           type="button"
                           onClick={() => {
-                            setPlaybackMode('embed');
+                            setStreamNode('embed');
                             setStreamError(false);
-                            setIsIframeLoading(true);
+                            setIsVideoLoading(false);
                           }}
-                          className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-xs font-medium text-amber-400 transition cursor-pointer"
+                          className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition cursor-pointer shadow-md flex items-center gap-1.5"
                         >
-                          Switch to Iframe Embed
+                          <span>🎬 Switch to Embed Player</span>
                         </button>
                       )}
+                      {standaloneFileUrl && (
+                        <a
+                          href={standaloneFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition cursor-pointer shadow-md flex items-center gap-1.5"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Run as File in New Tab</span>
+                        </a>
+                      )}
                     </div>
-                  </div>
-                )}
-              </div>
-            ) : (unblockedPlayerUrl || iframeSrc) ? (
-              <div className="w-full h-full relative">
-                <iframe
-                  key={`iframe-${item.id}-${reloadKey}`}
-                  src={unblockedPlayerUrl || iframeSrc}
-                  title={item.title}
-                  onLoad={() => setIsIframeLoading(false)}
-                  className={`w-full h-full border-0 absolute inset-0 transition-opacity duration-500 ${
-                    isIframeLoading ? 'opacity-0' : 'opacity-100'
-                  }`}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                  allowFullScreen
-                  loading="eager"
-                />
-                {isDirectCandidate && (
-                  <div className="absolute bottom-3 left-3 right-3 bg-zinc-950/90 border border-emerald-500/50 p-2.5 rounded-xl text-xs text-zinc-300 flex items-center justify-between gap-3 shadow-xl backdrop-blur-md z-30">
-                    <div className="flex items-center gap-2">
-                      <Play className="w-4 h-4 text-emerald-400 shrink-0 fill-emerald-400" />
-                      <span>Direct media stream available with instant playback and seeking.</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPlaybackMode('direct');
-                        setStreamError(false);
-                      }}
-                      className="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-zinc-950 font-bold rounded-lg text-xs shrink-0 cursor-pointer shadow-md transition flex items-center gap-1"
-                    >
-                      ⚡ Switch to Direct Stream
-                    </button>
                   </div>
                 )}
               </div>
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-zinc-400 bg-zinc-950">
-                <Film className="w-12 h-12 text-amber-500 mb-3" />
-                <h3 className="text-base font-bold text-white mb-1">Stream Unavailable</h3>
+                <FileVideo className="w-12 h-12 text-amber-500 mb-3" />
+                <h3 className="text-base font-bold text-white mb-1">Movie File Preparing</h3>
                 <p className="text-sm text-zinc-400 max-w-md">
-                  No video embed stream found for this movie.
+                  Resolving direct video media file stream...
                 </p>
               </div>
             )}
@@ -582,6 +828,66 @@ export const PlayerView = ({
                     #{tag}
                   </span>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* Media File Stream Information */}
+          <div className="mt-6 p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 max-w-3xl space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <FileVideo className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                  Direct Media File Specifications
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                {item.isLocalFile ? 'Local Offline File' : 'MP4 Direct Stream • Active'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-2.5 rounded-lg bg-zinc-950/70 border border-zinc-800/80">
+                <span className="text-[11px] text-zinc-500 block">File Name</span>
+                <span className="font-mono text-zinc-200 truncate block font-medium" title={movieFileSlug}>
+                  {movieFileSlug}
+                </span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-zinc-950/70 border border-zinc-800/80">
+                <span className="text-[11px] text-zinc-500 block">File Architecture</span>
+                <span className="text-zinc-200 font-medium block">
+                  Native HTML5 (MP4 / H.264)
+                </span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-zinc-950/70 border border-zinc-800/80">
+                <span className="text-[11px] text-zinc-500 block">Streaming Protocol</span>
+                <span className="text-zinc-200 font-medium block">
+                  {item.isLocalFile ? 'Local File Blob (0ms)' : 'HTTP Byte-Range (206 Partial)'}
+                </span>
+              </div>
+            </div>
+
+            {standaloneFileUrl && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <a
+                  href={standaloneFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs transition cursor-pointer shadow-xs"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Run as Standalone File in Browser</span>
+                </a>
+                {!item.isLocalFile && (
+                  <a
+                    href={downloadFileUrl || standaloneFileUrl}
+                    download={movieFileSlug}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs border border-zinc-700 transition cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Download MP4 File</span>
+                  </a>
+                )}
               </div>
             )}
           </div>

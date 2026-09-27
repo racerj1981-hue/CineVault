@@ -5,6 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CineVault</title>
     <script>
+      // Circular structure and DOM element safe guard for JSON.stringify
+      (function() {
+        var nativeStringify = JSON.stringify;
+        JSON.stringify = function(value, replacer, space) {
+          var seen = new WeakSet();
+          function internalReplacer(key, val) {
+            if (val && typeof val === 'object') {
+              // Intercept DOM elements (HTMLVideoElement, FiberNode, Window, Document, etc.)
+              if (
+                val.nodeType ||
+                (typeof Element !== 'undefined' && val instanceof Element) ||
+                (val.constructor && (
+                  val.constructor.name === 'HTMLVideoElement' ||
+                  val.constructor.name === 'FiberNode' ||
+                  val.constructor.name.indexOf('HTML') === 0 ||
+                  val.constructor.name === 'SyntheticBaseEvent'
+                ))
+              ) {
+                return '[DOM Element ' + (val.tagName || val.constructor.name || 'Node') + ']';
+              }
+              if (seen.has(val)) {
+                return '[Circular]';
+              }
+              seen.add(val);
+            }
+            if (typeof replacer === 'function') {
+              return replacer.call(this, key, val);
+            }
+            return val;
+          }
+          try {
+            return nativeStringify.call(this, value, typeof replacer === 'function' ? internalReplacer : (Array.isArray(replacer) ? replacer : internalReplacer), space);
+          } catch (e) {
+            try {
+              return nativeStringify.call(this, value, function(k, v) {
+                if (v && typeof v === 'object') {
+                  if (v.nodeType || (typeof Element !== 'undefined' && v instanceof Element)) return '[DOM Element]';
+                  if (seen.has(v)) return '[Circular]';
+                  seen.add(v);
+                }
+                return v;
+              }, space);
+            } catch (fallbackErr) {
+              return '"{}"';
+            }
+          }
+        };
+      })();
+
       // Normalize GitHub Pages trailing slash so relative paths (e.g. ./manifest.json, ./posters/...) resolve within repo scope
       if (location.hostname.includes('github.io')) {
         var pathSegments = location.pathname.split('/').filter(Boolean);

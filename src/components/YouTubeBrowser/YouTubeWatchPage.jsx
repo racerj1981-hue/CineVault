@@ -315,6 +315,10 @@ export const YouTubeWatchPage = ({
                 autoPlay
                 playsInline
                 onCanPlay={() => setIsVideoLoading(false)}
+                onError={(e) => {
+                  e?.stopPropagation?.();
+                  setIsVideoLoading(false);
+                }}
                 className="w-full h-full object-contain"
                 src={video.directStreamUrl || `/api/youtube/stream?id=${video.id}`}
                 poster={getVideoThumbnail(video.id, video.thumbnail)}
