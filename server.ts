@@ -196,6 +196,86 @@ const DEFAULT_VERIFIED_MOVIES: Record<string, { directUrl: string; fileName: str
     directUrl: "https://archive.org/download/Sintel/sintel-2048-surround.mp4",
     fileName: "sintel-2048-surround.mp4",
     title: "Sintel"
+  },
+  "jungle-book-1942": {
+    directUrl: "https://archive.org/download/JungleBook/Jungle_Book.mp4",
+    fileName: "Jungle_Book.mp4",
+    title: "Jungle Book"
+  },
+  "JungleBook": {
+    directUrl: "https://archive.org/download/JungleBook/Jungle_Book.mp4",
+    fileName: "Jungle_Book.mp4",
+    title: "Jungle Book"
+  },
+  "the-fast-and-the-furious-1955": {
+    directUrl: "https://archive.org/download/TheFastandtheFuriousJohnIreland1954goofyrip/TheFastandtheFuriousJohnIreland1954goofyrip.mp4",
+    fileName: "TheFastandtheFuriousJohnIreland1954goofyrip.mp4",
+    title: "The Fast and the Furious (1955)"
+  },
+  "TheFastandtheFuriousJohnIreland1954goofyrip": {
+    directUrl: "https://archive.org/download/TheFastandtheFuriousJohnIreland1954goofyrip/TheFastandtheFuriousJohnIreland1954goofyrip.mp4",
+    fileName: "TheFastandtheFuriousJohnIreland1954goofyrip.mp4",
+    title: "The Fast and the Furious (1955)"
+  },
+  "sita-sings-the-blues": {
+    directUrl: "https://archive.org/download/Sita_Sings_the_Blues/Sita_Sings_the_Blues.mp4",
+    fileName: "Sita_Sings_the_Blues.mp4",
+    title: "Sita Sings the Blues"
+  },
+  "Sita_Sings_the_Blues": {
+    directUrl: "https://archive.org/download/Sita_Sings_the_Blues/Sita_Sings_the_Blues.mp4",
+    fileName: "Sita_Sings_the_Blues.mp4",
+    title: "Sita Sings the Blues"
+  },
+  "dressed-to-kill-1946": {
+    directUrl: "https://archive.org/download/dressed_to_kill/dressed_to_kill.mp4",
+    fileName: "dressed_to_kill.mp4",
+    title: "Dressed to Kill (Sherlock Holmes)"
+  },
+  "dressed_to_kill": {
+    directUrl: "https://archive.org/download/dressed_to_kill/dressed_to_kill.mp4",
+    fileName: "dressed_to_kill.mp4",
+    title: "Dressed to Kill (Sherlock Holmes)"
+  },
+  "charlie-chaplin-festival": {
+    directUrl: "https://archive.org/download/charlie_chaplin_film_fest/charlie_chaplin_film_fest.mp4",
+    fileName: "charlie_chaplin_film_fest.mp4",
+    title: "Charlie Chaplin Festival"
+  },
+  "charlie_chaplin_film_fest": {
+    directUrl: "https://archive.org/download/charlie_chaplin_film_fest/charlie_chaplin_film_fest.mp4",
+    fileName: "charlie_chaplin_film_fest.mp4",
+    title: "Charlie Chaplin Festival"
+  },
+  "return-of-the-kung-fu-dragon": {
+    directUrl: "https://archive.org/download/Return_of_the_Kung_Fu_Dragon/Return_of_the_Kung_Fu_Dragon.mp4",
+    fileName: "Return_of_the_Kung_Fu_Dragon.mp4",
+    title: "Return of the Kung Fu Dragon"
+  },
+  "Return_of_the_Kung_Fu_Dragon": {
+    directUrl: "https://archive.org/download/Return_of_the_Kung_Fu_Dragon/Return_of_the_Kung_Fu_Dragon.mp4",
+    fileName: "Return_of_the_Kung_Fu_Dragon.mp4",
+    title: "Return of the Kung Fu Dragon"
+  },
+  "voyage-to-the-planet-of-prehistoric-women": {
+    directUrl: "https://archive.org/download/VoyagetothePlanetofPrehistoricWomen/VoyagetothePlanetofPrehistoricWomen.mp4",
+    fileName: "VoyagetothePlanetofPrehistoricWomen.mp4",
+    title: "Voyage to the Planet of Prehistoric Women"
+  },
+  "VoyagetothePlanetofPrehistoricWomen": {
+    directUrl: "https://archive.org/download/VoyagetothePlanetofPrehistoricWomen/VoyagetothePlanetofPrehistoricWomen.mp4",
+    fileName: "VoyagetothePlanetofPrehistoricWomen.mp4",
+    title: "Voyage to the Planet of Prehistoric Women"
+  },
+  "superman-the-mechanical-monsters-1941": {
+    directUrl: "https://archive.org/download/superman_the_mechanical_monsters/superman_the_mechanical_monsters_512kb.mp4",
+    fileName: "superman_the_mechanical_monsters_512kb.mp4",
+    title: "Superman: The Mechanical Monsters"
+  },
+  "superman_the_mechanical_monsters": {
+    directUrl: "https://archive.org/download/superman_the_mechanical_monsters/superman_the_mechanical_monsters_512kb.mp4",
+    fileName: "superman_the_mechanical_monsters_512kb.mp4",
+    title: "Superman: The Mechanical Monsters"
   }
 };
 
